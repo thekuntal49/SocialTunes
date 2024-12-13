@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { UserContext } from "../context/userContext";
 import MusicPlayer from "./MusicPlayer";
 import UserList from "./UserList";
-import UserName from "./userName";
+import UserName from "./UserName";
 import { Snackbar, Button } from "@mui/material";
 
 const DuoPlayer = () => {

@@ -2,7 +2,7 @@ import React, { useContext, useState } from "react";
 import { UserContext } from "../context/userContext";
 import { Button } from "@mui/material";
 
-const UserName = () => {
+export const UserName = () => {
   const { setUser } = useContext(UserContext);
   const [inputName, setInputName] = useState("");
 
@@ -78,4 +78,3 @@ const UserName = () => {
   );
 };
 
-export default UserName;
