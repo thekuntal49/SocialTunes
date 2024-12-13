@@ -18,7 +18,7 @@ export const UserProvider = ({ children }) => {
 
   useEffect(() => {
     if (user && !socket) {
-      const newSocket = io("http://192.168.43.102:5000");
+      const newSocket = io("https://socialtunes.onrender.com");
       setSocket(newSocket);
 
       newSocket.emit("register", { user });
