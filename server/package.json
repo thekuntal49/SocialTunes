@@ -4,11 +4,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node dist/server.js",
-    "dev": "nodemon server.js",
-    "build": "tsc",
-    "clean": "rm -rf dist",
-    "build-and-start": "npm run build && npm run start"
+    "start": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
