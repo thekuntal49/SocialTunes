@@ -49,6 +49,7 @@ const UserList = () => {
                 sx={{ display: "flex", justifyContent: "space-between" }}
               >
                 <ListItemText primary={`🔰 ${user.user}`} />
+                <ListItemText primary={`🔰 ${user.socketId}`} />
                 <Button variant="outlined" onClick={() => handleRequest(user)}>
                   Request
                 </Button>

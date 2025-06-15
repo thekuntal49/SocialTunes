@@ -7,12 +7,12 @@ import { UserContext } from "../../context/userContext";
 
 const SongList = () => {
   const { songs, isSongsLoading, setCurrentSong } = useContext(MusicContext);
+  const { user, partner } = useContext(UserContext);
   const { socket } = useContext(UserContext);
 
-  const onDuoPlay = (song) => {
+  const onPlay = (song) => {
     if (socket) {
-      socket.emit("songSocket", song);
-      "Song emitted:", song;
+      socket.emit("songSocket", { song, user, partner });
     } else {
       console.error("Socket not connected");
     }
@@ -41,7 +41,7 @@ const SongList = () => {
               <Box
                 key={song._id}
                 onClick={() => {
-                  onDuoPlay(song), setCurrentSong(song);
+                  onPlay(song), setCurrentSong(song);
                 }}
                 sx={{
                   position: "relative",

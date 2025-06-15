@@ -12,7 +12,6 @@ import { UserContext } from "../context/userContext";
 const PlayerControls = () => {
   const { currentSong, songs, setCurrentSong } = useContext(MusicContext);
   const { socket } = useContext(UserContext);
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(50);
   const [currentTime, setCurrentTime] = useState(0);
@@ -26,31 +25,53 @@ const PlayerControls = () => {
     }
   }, [currentSong]);
 
-  // Listen for songSocket events
+  // Listen for real-time events from the server
   useEffect(() => {
     if (socket) {
-      const handleSongSocket = (song) => {
+      // Listen for song updates
+      socket.on("songSockett", ({ song, user, partner }) => {
+        console.log("Song received:", song, user, partner);
         setCurrentSong(song);
-        "Song received:", song;
-      };
+      });
 
-      socket.on("songSocket", handleSongSocket);
+      // Listen for play/pause state updates
+      socket.on("PlayPause", ({ isPlaying }) => {
+        console.log("Play/Pause event received:", isPlaying);
+        setIsPlaying(isPlaying);
 
-      // Clean up the listener on unmount
+        if (audioRef.current) {
+          if (isPlaying) {
+            audioRef.current.play();
+          } else {
+            audioRef.current.pause();
+          }
+        }
+      });
+
+      // Clean up listeners on unmount
       return () => {
-        socket.off("songSocket", handleSongSocket);
+        socket.off("songSockett");
+        socket.off("PlayPause");
       };
     }
   }, [socket]);
 
-  // Toggle play/pause
+  // Toggle play/pause state and notify the server
   const togglePlayPause = () => {
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
+    const newState = !isPlaying;
+    setIsPlaying(newState);
+
+    if (audioRef.current) {
+      if (newState) {
+        audioRef.current.play();
+      } else {
+        audioRef.current.pause();
+      }
     }
-    setIsPlaying(!isPlaying);
+
+    if (socket) {
+      socket.emit("togglePlayPause", { isPlaying: newState });
+    }
   };
 
   // Handle volume change
@@ -125,7 +146,6 @@ const PlayerControls = () => {
       } else if (event.code === "Space") {
         // Use event.code for more reliable detection
         event.preventDefault(); // Prevent the default scroll behavior
-        ("Spacebar pressed");
         togglePlayPause();
       }
     };
