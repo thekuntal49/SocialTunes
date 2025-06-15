@@ -168,62 +168,57 @@ const PlayerControls = () => {
             bottom: 0,
             left: 0,
             right: 0,
-            background: "linear-gradient(180deg, #1e1e1e, #121212)",
-            padding: "1rem",
-            borderRadius: "12px 12px 0 0",
-            boxShadow: "0 -4px 10px rgba(0, 0, 0, 0.3)",
-            zIndex: 1000,
+            background: "linear-gradient(160deg, #1e1e1e, #0f0f0f)",
+            padding: "1.2rem 2rem",
+            borderRadius: "16px 16px 0 0",
+            boxShadow: "0 -6px 20px rgba(0, 0, 0, 0.5)",
+            zIndex: 1300,
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            "@media (max-width: 600px)": {
-              padding: "0.8rem",
-            },
+            gap: 2.5,
           }}
         >
-          {/* Remove Player */}
+          {/* Close Player */}
           <IconButton
             onClick={onRemove}
             sx={{
               position: "absolute",
-              top: "0.5rem",
-              right: "0.5rem",
-              color: "#ff5252",
+              top: "0.6rem",
+              right: "0.6rem",
+              color: "#f44336",
+              bgcolor: "rgba(255, 82, 82, 0.1)",
+              "&:hover": { bgcolor: "rgba(255, 82, 82, 0.2)" },
             }}
           >
             <CloseIcon />
           </IconButton>
 
-          {/* Thumbnail and Track Info */}
-          <Box display="flex" alignItems="center" gap={3}>
+          {/* Thumbnail & Info */}
+          <Box display="flex" alignItems="center" gap={2.5}>
             <img
               src={currentSong.thumbnail}
               alt={currentSong.name}
               style={{
-                width: "70px",
-                height: "70px",
-                borderRadius: "10px",
-                boxShadow: "0 4px 8px rgba(0, 0, 0, 0.5)",
+                width: 68,
+                height: 68,
+                borderRadius: "12px",
+                objectFit: "cover",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.6)",
               }}
             />
             <Box>
               <Typography
-                variant="h6"
+                variant="subtitle1"
                 sx={{
+                  fontWeight: 600,
                   color: "#fff",
-                  fontWeight: "bold",
-                  textShadow: "1px 1px 4px rgba(0, 0, 0, 0.7)",
+                  lineHeight: 1.2,
+                  textShadow: "0 1px 4px rgba(0,0,0,0.7)",
                 }}
               >
                 {currentSong.name}
               </Typography>
-              <Typography
-                sx={{
-                  color: "#bbb",
-                  fontSize: "0.9rem",
-                }}
-              >
+              <Typography sx={{ color: "#ccc", fontSize: "0.9rem" }}>
                 {currentSong.artist}
               </Typography>
             </Box>
@@ -232,18 +227,18 @@ const PlayerControls = () => {
           {/* Controls */}
           <Box
             display="flex"
-            alignItems="center"
             justifyContent="center"
+            alignItems="center"
             gap={3}
           >
             <IconButton
               onClick={handlePrev}
               sx={{
                 color: "#1db954",
-                backgroundColor: "rgba(29, 185, 84, 0.1)",
-                "&:hover": { backgroundColor: "rgba(29, 185, 84, 0.2)" },
+                bgcolor: "rgba(29, 185, 84, 0.08)",
+                "&:hover": { bgcolor: "rgba(29, 185, 84, 0.2)" },
+                p: 1.2,
                 borderRadius: "50%",
-                padding: "10px",
               }}
             >
               <SkipPreviousIcon />
@@ -253,16 +248,16 @@ const PlayerControls = () => {
               onClick={togglePlayPause}
               sx={{
                 color: isPlaying ? "#f44336" : "#1db954",
-                backgroundColor: isPlaying
+                bgcolor: isPlaying
                   ? "rgba(244, 67, 54, 0.1)"
                   : "rgba(29, 185, 84, 0.1)",
                 "&:hover": {
-                  backgroundColor: isPlaying
+                  bgcolor: isPlaying
                     ? "rgba(244, 67, 54, 0.2)"
                     : "rgba(29, 185, 84, 0.2)",
                 },
+                p: 1.6,
                 borderRadius: "50%",
-                padding: "14px",
               }}
             >
               {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
@@ -272,39 +267,26 @@ const PlayerControls = () => {
               onClick={handleNext}
               sx={{
                 color: "#1db954",
-                backgroundColor: "rgba(29, 185, 84, 0.1)",
-                "&:hover": { backgroundColor: "rgba(29, 185, 84, 0.2)" },
+                bgcolor: "rgba(29, 185, 84, 0.08)",
+                "&:hover": { bgcolor: "rgba(29, 185, 84, 0.2)" },
+                p: 1.2,
                 borderRadius: "50%",
-                padding: "10px",
               }}
             >
               <SkipNextIcon />
             </IconButton>
           </Box>
 
-          {/* Time and Volume */}
+          {/* Time & Volume */}
           <Box
             display="flex"
             alignItems="center"
             justifyContent="space-between"
-            gap={3}
-            sx={{
-              width: "100%",
-              "@media (max-width: 600px)": {
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 1.5,
-              },
-            }}
+            flexWrap="wrap"
+            gap={2}
+            sx={{ mt: 1 }}
           >
-            <Typography
-              sx={{
-                color: "#fff",
-                fontSize: "0.9rem",
-                flex: "none",
-                whiteSpace: "nowrap",
-              }}
-            >
+            <Typography sx={{ color: "#fff", fontSize: "0.85rem" }}>
               {formatTime(currentTime)} / {formatTime(duration)}
             </Typography>
 
@@ -317,25 +299,16 @@ const PlayerControls = () => {
               }}
               sx={{
                 flex: 1,
+                mx: 2,
                 color: "#1db954",
                 "& .MuiSlider-thumb": {
-                  backgroundColor: "#1db954",
+                  width: 12,
+                  height: 12,
                 },
               }}
             />
 
-            <Box
-              display="flex"
-              alignItems="center"
-              gap={1}
-              sx={{
-                flex: "none",
-                "@media (max-width: 600px)": {
-                  width: "100%",
-                  justifyContent: "center",
-                },
-              }}
-            >
+            <Box display="flex" alignItems="center" gap={1}>
               <VolumeUpIcon sx={{ color: "#1db954" }} />
               <Slider
                 value={volume}
@@ -343,13 +316,18 @@ const PlayerControls = () => {
                 min={0}
                 max={100}
                 sx={{
-                  width: "100px",
+                  width: 100,
                   color: "#1db954",
+                  "& .MuiSlider-thumb": {
+                    width: 10,
+                    height: 10,
+                  },
                 }}
               />
             </Box>
           </Box>
 
+          {/* Audio Element */}
           <audio
             ref={audioRef}
             src={currentSong.audioUrl}
@@ -358,9 +336,7 @@ const PlayerControls = () => {
             onTimeUpdate={handleTimeUpdate}
           />
         </Box>
-      ) : (
-        <></>
-      )}
+      ) : null}
     </>
   );
 };
