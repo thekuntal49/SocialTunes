@@ -10,11 +10,12 @@ import { Visitor } from "./components/Visitor";
 const App = () => (
   <ThemeProvider theme={theme}>
     <CssBaseline />
-    <Visitor />
+    {/* <Visitor /> */}
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/player" element={<MusicPlayer />} />
+        <Route path="*" element={<Home />} />
       </Routes>
     </Router>
   </ThemeProvider>

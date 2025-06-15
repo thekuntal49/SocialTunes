@@ -7,7 +7,7 @@ const SinglePlayer = () => {
   const { currentSong } = useContext(MusicContext);
 
   return (
-    <div style={{ padding: "1rem" }}>
+    <div >
       <SongList />
       {currentSong ? <PlayerControls /> : <></>}
     </div>
