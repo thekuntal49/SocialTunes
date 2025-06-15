@@ -17,14 +17,13 @@ export const UserProvider = ({ children }) => {
   const [activeUsers, setActiveUsers] = useState([]);
   const [isUserLoading, setIsUserLoading] = useState(true);
   const [partner, setPartner] = useState([]);
-  const [partnerLeftNotice, setPartnerLeftNotice] = useState(false);
 
   const { setCurrentSong } = useContext(MusicContext);
 
   useEffect(() => {
     if (user && !socket) {
       const newSocket = io("https://social-tunes.onrender.com");
-      // const newSocket = io("http://192.168.1.3:5000");
+      //const newSocket = io("http://192.168.1.3:5000");
       setSocket(newSocket);
 
       newSocket.on("connect", () => {
@@ -48,11 +47,14 @@ export const UserProvider = ({ children }) => {
       newSocket.on("partnerLeft", () => {
         setPartner([]);
         toast.error("Your partner has left the session.");
-        setPartnerLeftNotice(true);
       });
 
       newSocket.emit("readyToReceiveSong", newSocket.id);
 
+      newSocket.on("disconnect", () => {
+        setPartner([]);
+        toast.error("Your partner has left the session.");
+      });
       return () => {
         newSocket.off("partnerLeft");
         newSocket.disconnect();
@@ -78,10 +80,8 @@ export const UserProvider = ({ children }) => {
       refreshUsers,
       partner,
       setPartner,
-      partnerLeftNotice,
-      setPartnerLeftNotice,
     }),
-    [user, socket, activeUsers, isUserLoading, partner, partnerLeftNotice]
+    [user, socket, activeUsers, isUserLoading, partner]
   );
 
   return (

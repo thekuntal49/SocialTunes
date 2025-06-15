@@ -71,20 +71,22 @@ export const connectSocket = (server) => {
     receiveEventFromUser(socket, "leaveSession", (payload) => {
       const { by, partnerId } = payload;
 
-      const userClient = getPartnerSocket(socket.id);
-      const partnerClient = getPartnerSocket(partnerId);
+      const sender = getPartnerSocket(socket.id);
+      const partner = getPartnerSocket(partnerId);
 
-      if (userClient) userClient.partnerId = null;
-      if (partnerClient) partnerClient.partnerId = null;
+      if (sender) sender.partner = null;
+      if (partner) partner.partner = null;
 
-      sendSelfEventToUser(socket, "partnerLeft", {});
       sendBroadcastToUser(socket, partnerId, "partnerLeft", {});
     });
 
 
-
     socket.on("disconnect", () => {
+      const partnerId = getPartnerSocket(socket.id)?.partner;
+      console.log(partnerId);
       clients.delete(socket.id);
+
+      sendBroadcastToUser(socket, partnerId, "partnerLeft", {});
       sendEventToUser(io, "activeUsers", getActiveClients());
       console.log(`❌ User disconnected: ${socket.id}`);
     });

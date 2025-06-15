@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import { connectDB } from "./src/db/db.js";
 import musicRoutes from "./src/routes/musicRoutes.js";
 import userRoutes from "./src/routes/userRoutes.js";
-import { connectSocket } from "./src/db/socket.js";
+import { connectSocket } from "./src/config/socket.js";
 
 dotenv.config();
 connectDB();
