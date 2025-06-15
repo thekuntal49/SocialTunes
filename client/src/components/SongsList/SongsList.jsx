@@ -14,7 +14,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import MusicOffIcon from "@mui/icons-material/MusicOff";
 import { MusicContext } from "../../context/MusicContext";
 import { SongsListSkeleton } from "./SongsListSkeleton";
-import { UserContext } from "../../context/UserContext";
+import { UserContext } from "../../context/userContext";
 
 const SongList = () => {
   const { songs, isSongsLoading, setCurrentSong } = useContext(MusicContext);

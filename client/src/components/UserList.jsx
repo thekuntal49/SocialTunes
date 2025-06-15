@@ -13,7 +13,7 @@ import {
 import RefreshIcon from "@mui/icons-material/Refresh";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
-import { UserContext } from "../context/UserContext";
+import { UserContext } from "../context/userContext";
 import toast from "react-hot-toast";
 
 const UserList = () => {

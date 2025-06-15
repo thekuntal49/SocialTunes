@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { UserContext } from "../context/UserContext";
+import { UserContext } from "../context/userContext";
 import { Box, Typography, Paper, Divider, Button, Stack } from "@mui/material";
 import PlayerControls from "./PlayerControls";
 import SongList from "./SongsList/SongsList";

@@ -7,7 +7,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import { MusicContext } from "../context/MusicContext";
-import { UserContext } from "../context/UserContext";
+import { UserContext } from "../context/userContext";
 
 const PlayerControls = () => {
   const { currentSong, songs, setCurrentSong } = useContext(MusicContext);
