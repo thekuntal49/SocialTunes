@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { UserContext } from "../context/UserContext";
+import { UserContext } from "../context/userContext";
 import MusicPlayer from "./MusicPlayer";
 import UserList from "./UserList";
 import { UserName } from "./UserName";
