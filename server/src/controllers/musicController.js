@@ -2,8 +2,8 @@ import fs from "fs";
 import {
   uploadCloudinary,
   uploadCloudinaryAudio,
-} from "../../cloudinary/cloudinary.js";
-import { multerConfig } from "../../config/multerConfig.js";
+} from "../../config/cloudinary.js";
+import { multerConfig } from "../../config/multer.js";
 import { Music } from "../models/Music.js";
 
 export const createSong = async (req, res) => {

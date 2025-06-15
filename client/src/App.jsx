@@ -10,7 +10,7 @@ import { Visitor } from "./components/Visitor";
 const App = () => (
   <ThemeProvider theme={theme}>
     <CssBaseline />
-    {/* <Visitor /> */}
+    <Visitor />
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
