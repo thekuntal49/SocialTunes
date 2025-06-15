@@ -7,7 +7,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import { MusicContext } from "../context/MusicContext";
-import { UserContext } from "../context/userContext";
+import { UserContext } from "../context/UserContext";
 
 const PlayerControls = () => {
   const { currentSong, songs, setCurrentSong } = useContext(MusicContext);
@@ -54,7 +54,7 @@ const PlayerControls = () => {
         socket.off("PlayPause");
       };
     }
-  }, [socket]);
+  }, [socket, currentSong]);
 
   // Toggle play/pause state and notify the server
   const togglePlayPause = () => {
@@ -70,7 +70,10 @@ const PlayerControls = () => {
     }
 
     if (socket) {
-      socket.emit("togglePlayPause", { isPlaying: newState });
+      socket.emit("togglePlayPause", {
+        isPlaying: newState,
+        partner: currentSong.partner,
+      });
     }
   };
 

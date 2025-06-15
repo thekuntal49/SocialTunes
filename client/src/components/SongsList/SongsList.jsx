@@ -1,6 +1,10 @@
 import React, { useContext } from "react";
 import {
   Box,
+  Grid,
+  Card,
+  CardMedia,
+  CardContent,
   Typography,
   IconButton,
   Stack,
@@ -10,7 +14,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import MusicOffIcon from "@mui/icons-material/MusicOff";
 import { MusicContext } from "../../context/MusicContext";
 import { SongsListSkeleton } from "./SongsListSkeleton";
-import { UserContext } from "../../context/userContext";
+import { UserContext } from "../../context/UserContext";
 
 const SongList = () => {
   const { songs, isSongsLoading, setCurrentSong } = useContext(MusicContext);
@@ -18,9 +22,9 @@ const SongList = () => {
 
   const onPlay = (song) => {
     if (socket) {
+      console.log("Hello");
       socket.emit("songSocket", { song, user, partner });
     } else {
-      console.error("Socket not connected");
     }
   };
 
@@ -29,9 +33,17 @@ const SongList = () => {
       sx={{
         minHeight: "100vh",
         background: "linear-gradient(to bottom, #1a0000, #0f0f0f)",
-        p: 4,
+        py: 6,
+        px: { xs: 2, sm: 4, md: 8 },
       }}
     >
+      <Typography
+        variant="h4"
+        sx={{ mb: 4, fontWeight: "bold", color: "#fff" }}
+      >
+        Available Tunes
+      </Typography>
+
       {isSongsLoading ? (
         <SongsListSkeleton />
       ) : songs.length === 0 ? (
@@ -55,74 +67,67 @@ const SongList = () => {
           </Typography>
         </Box>
       ) : (
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-            gap: "2rem",
-          }}
-        >
+        <Grid container spacing={4}>
           {songs.map((song) => (
-            <Box
-              key={song._id}
-              onClick={() => {
-                onPlay(song);
-                setCurrentSong(song);
-              }}
-              sx={{
-                position: "relative",
-                borderRadius: "12px",
-                overflow: "hidden",
-                cursor: "pointer",
-                backgroundColor: "#1c0d0d",
-                boxShadow: "0 4px 15px rgba(255, 76, 76, 0.15)",
-                transition: "transform 0.3s ease",
-                "&:hover": {
-                  transform: "scale(1.04)",
-                },
-              }}
-            >
-              <Box
+            <Grid item xs={12} sm={6} md={4} lg={3} key={song._id}>
+              <Card
+                onClick={() => {
+                  onPlay(song);
+                  setCurrentSong(song);
+                }}
                 sx={{
-                  position: "relative",
-                  paddingTop: "56.25%",
-                  backgroundImage: `url(${song.thumbnail})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
+                  backgroundColor: "#1c0d0d",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  boxShadow: "0 8px 24px rgba(255, 76, 76, 0.15)",
+                  transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                  cursor: "pointer",
+                  "&:hover": {
+                    transform: "translateY(-6px)",
+                    boxShadow: "0 12px 30px rgba(255, 76, 76, 0.25)",
+                  },
                 }}
               >
-                <IconButton
-                  sx={{
-                    position: "absolute",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    backgroundColor: "rgba(0, 0, 0, 0.5)",
-                    color: "#fff",
-                    "&:hover": {
-                      backgroundColor: "rgba(255, 76, 76, 0.8)",
-                    },
-                  }}
-                >
-                  <PlayArrowIcon sx={{ fontSize: "2.5rem" }} />
-                </IconButton>
-              </Box>
-
-              <Box sx={{ p: 2 }}>
-                <Typography variant="h6" sx={{ color: "#fff" }} noWrap>
-                  {song.name}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: "#ccc", fontStyle: "italic" }}
-                  noWrap
-                >
-                  {song.artist}
-                </Typography>
-              </Box>
-            </Box>
+                <Box sx={{ position: "relative" }}>
+                  <CardMedia
+                    component="img"
+                    height="180"
+                    image={song.thumbnail}
+                    alt={song.name}
+                    sx={{ filter: "brightness(0.9)" }}
+                  />
+                  <IconButton
+                    sx={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      transform: "translate(-50%, -50%)",
+                      backgroundColor: "rgba(0, 0, 0, 0.6)",
+                      color: "#fff",
+                      "&:hover": {
+                        backgroundColor: "#ff4c4c",
+                      },
+                    }}
+                  >
+                    <PlayArrowIcon sx={{ fontSize: "2rem" }} />
+                  </IconButton>
+                </Box>
+                <CardContent sx={{ color: "#fff" }}>
+                  <Typography variant="h6" noWrap>
+                    {song.name}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#bbb", fontStyle: "italic" }}
+                    noWrap
+                  >
+                    {song.artist}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
           ))}
-        </Box>
+        </Grid>
       )}
     </Box>
   );

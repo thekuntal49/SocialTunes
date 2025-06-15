@@ -1,58 +1,134 @@
-const activeUsers = new Map();
+import { Server } from "socket.io";
 
-export const socketHandler = (io) => {
+const clients = new Map();
+
+const allowedOrigins = [
+  "https://social-tunes.vercel.app",
+  "http://localhost:3000",
+  "http://192.168.1.3:3000"
+];
+
+export const connectSocket = (server) => {
+
+  const io = new Server(server, {
+    cors: {
+      origin: allowedOrigins,
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      credentials: true,
+    },
+  });
+
   io.on("connection", (socket) => {
-    console.log(`🔗 User connected: ${socket.id}`);
 
-    socket.on("register", ({ user }) => {
-      if (user) {
-        activeUsers.set(socket.id, { user, socketId: socket.id });
-        console.log(Array.from(activeUsers.values()));
+    receiveEventFromUser(socket, "register", (payload) => {
+      console.log(`${payload.user} connected: ${socket.id}`);
+      clients.set(socket.id, {
+        user: payload.user,
+        socketId: socket.id,
+        partner: null,
+      });
+      sendEventToUser(io, "activeUsers", getActiveClients());
+    });
 
-        io.emit("activeUsers", Array.from(activeUsers.values()));
-        console.log(`✅ User registered: ${user}`);
+    receiveEventFromUser(socket, "refreshUsers", () => {
+      sendEventToUser(io, "activeUsers", getActiveClients());
+    });
+
+    receiveEventFromUser(socket, "sendRequest", (payload) => {
+      sendBroadcastToUser(socket, payload.to.socketId, "receiveRequest", payload);
+      console.log(`Request sent from ${payload.from.user} to ${payload.to.partner}`);
+    });
+
+    receiveEventFromUser(socket, "acceptRequest", (payload) => {
+      const fromSocketId = socket.id;
+      const toSocketId = payload.whom.socketId;
+
+      if (clients.has(fromSocketId)) {
+        clients.get(fromSocketId).partner = toSocketId;
       }
-    });
-
-    socket.on("refreshUsers", () => {
-      io.emit("activeUsers", Array.from(activeUsers.values()));
-    });
-
-    socket.on("sendRequest", ({ from, to }) => {
-      io.to(to.socketId).emit("receiveRequest", { from, to });
-      console.log(`🔔 Request sent from ${from.user} to ${to.partner}`);
-    });
-
-    socket.on("acceptRequest", ({ by, whom }) => {
-      io.to(whom.socketId).emit("requestAccepted", { by, whom });
-      io.to(by.socketId).emit("requestAccepted", { by, whom });
-      console.log(`✅ Request accepted between ${by.partner} and ${whom.user}`);
-    });
-
-    socket.on("songSocket", ({ song, user, partner }) => {
-      console.log("Received song:", song, user, partner);
-
-      if (partner.socketId) {
-        io.to(partner.socketId).emit("songSockett", { song, user, partner });
-      } else {
-        console.log("bhad me jaye");
+      if (clients.has(toSocketId)) {
+        clients.get(toSocketId).partner = fromSocketId;
       }
+
+      sendSelfEventToUser(socket, "requestAccepted", payload);
+      sendBroadcastToUser(socket, payload.whom.socketId, "requestAccepted", payload);
+      console.log(`Request accepted between ${payload.by.partner} and ${payload.whom.user}`);
     });
 
-    socket.on("togglePlayPause", ({ isPlaying }) => {
-      console.log(`🎵 Play/Pause toggled: ${isPlaying} by ${socket.id}`);
-    
-      // Broadcast the play/pause state to all active users or a specific partner
-      socket.broadcast.emit("PlayPause", { isPlaying });
-    
-      // If you want to send it only to a specific partner:
-      // io.to(partnerSocketId).emit("PlayPause", { isPlaying });
+    receiveEventFromUser(socket, "songSocket", (payload) => {
+      console.log("Received song:", payload.song.name, payload.user, payload.partner);
+      sendBroadcastToUser(socket, payload.partner.socketId, "songSockett", payload);
     });
+
+    receiveEventFromUser(socket, "togglePlayPause", (payload) => {
+      console.log(`Play/Pause toggled: ${payload.isPlaying} by ${socket.id}`);
+      const sender = getPartnerSocket(socket.id);
+
+      sendBroadcastToUser(socket, sender.partner, "PlayPause", payload);
+    });
+
+    receiveEventFromUser(socket, "leaveSession", (payload) => {
+      const { by, partnerId } = payload;
+
+      const userClient = getPartnerSocket(socket.id);
+      const partnerClient = getPartnerSocket(partnerId);
+
+      if (userClient) userClient.partnerId = null;
+      if (partnerClient) partnerClient.partnerId = null;
+
+      sendSelfEventToUser(socket, "partnerLeft", {});
+      sendBroadcastToUser(socket, partnerId, "partnerLeft", {});
+    });
+
+
 
     socket.on("disconnect", () => {
-      activeUsers.delete(socket.id);
-      io.emit("activeUsers", Array.from(activeUsers.values()));
+      clients.delete(socket.id);
+      sendEventToUser(io, "activeUsers", getActiveClients());
       console.log(`❌ User disconnected: ${socket.id}`);
     });
   });
 };
+
+const sendSelfEventToUser = (socket, event, payload) => {
+  socket.emit(event, payload);
+  console.log("sendSelfEventToUser-->", event, payload);
+};
+
+const sendEventToUser = (io, event, payload) => {
+  io.emit(event, payload);
+  console.log("sendEventToUser-->", event, payload);
+};
+
+const sendBroadcastToUser = (socket, userId, event, payload) => {
+  if (userId) {
+    socket.broadcast.to(userId).emit(event, payload);
+    console.log('sendBroadcastToUser-->', event, userId);
+  }
+};
+
+const getActiveClients = () => {
+  return Array.from(clients.values());
+};
+
+const receiveEventFromUser = (socket, event, callback) => {
+  socket.on(event, (payload) => {
+    console.log("receiveEventFromUser-->", event, payload);
+
+    callback(payload);
+  });
+};
+
+const isClientConnected = (clientId) => {
+  return clients.has(clientId);
+};
+
+
+function getPartnerSocket(socketId) {
+  return clients.get(socketId);
+}
+
+
+
+

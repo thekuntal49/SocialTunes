@@ -6,19 +6,13 @@ import dotenv from "dotenv";
 import { connectDB } from "./src/db/db.js";
 import musicRoutes from "./src/routes/musicRoutes.js";
 import userRoutes from "./src/routes/userRoutes.js";
-import { socketHandler } from "./src/db/socket.js";
+import { connectSocket } from "./src/db/socket.js";
 
 dotenv.config();
 connectDB();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    // origin: "https://social-tunes.vercel.app",
-    origin: "*",
-  },
-});
 
 // Middleware
 app.use(cors());
@@ -27,7 +21,7 @@ app.use("/api/music", musicRoutes);
 app.use("/api/users", userRoutes);
 
 // Socket.IO handling
-socketHandler(io);
+connectSocket(server);
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () =>

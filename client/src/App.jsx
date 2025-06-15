@@ -6,11 +6,13 @@ import theme from "./theme";
 import Home from "./pages/Home";
 import MusicPlayer from "./pages/MusicPlayer";
 import { Visitor } from "./components/Visitor";
+import { Toaster } from "./components/Toaster";
 
 const App = () => (
   <ThemeProvider theme={theme}>
     <CssBaseline />
     <Visitor />
+    <Toaster />
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />

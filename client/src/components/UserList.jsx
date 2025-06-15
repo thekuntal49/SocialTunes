@@ -13,7 +13,8 @@ import {
 import RefreshIcon from "@mui/icons-material/Refresh";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
-import { UserContext } from "../context/userContext";
+import { UserContext } from "../context/UserContext";
+import toast from "react-hot-toast";
 
 const UserList = () => {
   const { activeUsers, isUserLoading, refreshUsers, socket, user } =
@@ -25,6 +26,10 @@ const UserList = () => {
         to: { partner: u.user, socketId: u.socketId },
         from: { user, socketId: socket.id },
       });
+      toast.success(`Request sent to ${u.user}`);
+      // const loadingToastId = toast.loading("Waiting for response...", {
+      //   autoClose: false,
+      // });
     }
   };
 

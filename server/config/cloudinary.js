@@ -61,11 +61,11 @@ cloudinary.config({
 });
 
 // Fetch Usage Details
-cloudinary.api
-  .usage()
-  .then((result) => {
-    // console.log(result);
-  })
-  .catch((error) => {
-    console.error("Error fetching usage details:", error);
-  });
+// cloudinary.api
+//   .usage()
+//   .then((result) => {
+//     console.log(result);
+//   })
+//   .catch((error) => {
+//     console.error("Error fetching usage details:", error);
+//   });
