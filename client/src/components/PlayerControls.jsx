@@ -11,7 +11,7 @@ import { UserContext } from "../context/userContext";
 
 const PlayerControls = () => {
   const { currentSong, songs, setCurrentSong } = useContext(MusicContext);
-  const { socket } = useContext(UserContext);
+  const { user, partner, setPartner, socket } = useContext(UserContext);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(50);
   const [currentTime, setCurrentTime] = useState(0);
@@ -99,8 +99,14 @@ const PlayerControls = () => {
       if (currentSong._id === songs[i]._id) {
         if (!songs[i + 1]) {
           setCurrentSong(songs[0]);
+          if (socket) {
+            socket.emit("songSocket", { song: songs[0], user, partner });
+          }
         } else {
           setCurrentSong(songs[i + 1]);
+          if (socket) {
+            socket.emit("songSocket", { song: songs[i + 1], user, partner });
+          }
         }
       }
     }
@@ -112,8 +118,22 @@ const PlayerControls = () => {
       if (currentSong._id === songs[i]._id) {
         if (!songs[i - 1]) {
           setCurrentSong(songs[songs.length - 1]);
+          if (socket) {
+            socket.emit("songSocket", {
+              song: songs[songs.length - 1],
+              user,
+              partner,
+            });
+          }
         } else {
           setCurrentSong(songs[i - 1]);
+          if (socket) {
+            socket.emit("songSocket", {
+              song: songs[i - 1],
+              user,
+              partner,
+            });
+          }
         }
       }
     }
@@ -171,14 +191,15 @@ const PlayerControls = () => {
             bottom: 0,
             left: 0,
             right: 0,
-            background: "linear-gradient(160deg, #1e1e1e, #0f0f0f)",
-            padding: "1.2rem 2rem",
-            borderRadius: "16px 16px 0 0",
-            boxShadow: "0 -6px 20px rgba(0, 0, 0, 0.5)",
+            background: "linear-gradient(160deg, #121212, #0f0f0f)",
+            padding: "1.4rem 2rem",
+            borderRadius: "20px 20px 0 0",
+            boxShadow: "0 -8px 30px rgba(0, 0, 0, 0.6)",
             zIndex: 1300,
             display: "flex",
             flexDirection: "column",
             gap: 2.5,
+            borderTop: "1px solid #333",
           }}
         >
           {/* Close Player */}
@@ -198,17 +219,48 @@ const PlayerControls = () => {
 
           {/* Thumbnail & Info */}
           <Box display="flex" alignItems="center" gap={2.5}>
-            <img
-              src={currentSong.thumbnail}
-              alt={currentSong.name}
-              style={{
-                width: 68,
-                height: 68,
-                borderRadius: "12px",
-                objectFit: "cover",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.6)",
-              }}
-            />
+            <Box sx={{ position: "relative" }}>
+              <img
+                src={currentSong.thumbnail}
+                alt={currentSong.name}
+                style={{
+                  width: 68,
+                  height: 68,
+                  borderRadius: "12px",
+                  objectFit: "cover",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.6)",
+                }}
+              />
+              {isPlaying && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    bottom: -6,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    display: "flex",
+                    gap: "3px",
+                  }}
+                >
+                  {[1, 2, 3].map((i) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        width: 4,
+                        height: 12,
+                        borderRadius: 1,
+                        backgroundColor: "#1db954",
+                        animation: `bounce ${
+                          0.6 + i * 0.1
+                        }s infinite ease-in-out`,
+                        animationDelay: `${i * 0.1}s`,
+                      }}
+                    />
+                  ))}
+                </Box>
+              )}
+            </Box>
+
             <Box>
               <Typography
                 variant="subtitle1"
@@ -221,7 +273,7 @@ const PlayerControls = () => {
               >
                 {currentSong.name}
               </Typography>
-              <Typography sx={{ color: "#ccc", fontSize: "0.9rem" }}>
+              <Typography sx={{ color: "#bbb", fontSize: "0.9rem" }}>
                 {currentSong.artist}
               </Typography>
             </Box>

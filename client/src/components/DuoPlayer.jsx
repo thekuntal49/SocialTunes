@@ -4,6 +4,8 @@ import MusicPlayer from "./MusicPlayer";
 import UserList from "./UserList";
 import { UserName } from "./UserName";
 import { Snackbar, Alert, Button, Stack, Typography, Box } from "@mui/material";
+import toast from "react-hot-toast";
+import { use } from "react";
 
 const DuoPlayer = () => {
   const [request, setRequest] = useState(null);
@@ -27,6 +29,15 @@ const DuoPlayer = () => {
     }
   }, [socket, request, setPartner]);
 
+  useEffect(() => {
+    if (socket) {
+      socket.on("declineRequestt", ({ by, whom }) => {
+        setRequest(null);
+        toast.error(`Request declined by ${by.partner} `);
+      });
+    }
+  }, [socket]);
+
   const handleAccept = () => {
     if (socket && request.length > 1) {
       socket.emit("acceptRequest", {
@@ -39,13 +50,23 @@ const DuoPlayer = () => {
           socketId: request[0].socketId,
         },
       });
-
-      setRequest(null);
     }
   };
 
   const handleDecline = () => {
     setRequest(null);
+    if (socket) {
+      socket.emit("declineRequest", {
+        by: {
+          partner: request[1].partner,
+          socketId: request[1].socketId,
+        },
+        whom: {
+          user: request[0].user,
+          socketId: request[0].socketId,
+        },
+      });
+    }
   };
 
   return (

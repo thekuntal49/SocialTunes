@@ -22,9 +22,7 @@ const SongList = () => {
 
   const onPlay = (song) => {
     if (socket) {
-      console.log("Hello");
       socket.emit("songSocket", { song, user, partner });
-    } else {
     }
   };
 

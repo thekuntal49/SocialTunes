@@ -5,7 +5,7 @@ const clients = new Map();
 const allowedOrigins = [
   "https://social-tunes.vercel.app",
   "http://localhost:3000",
-  "http://192.168.1.3:3000"
+  "http://192.168.1.4:3000"
 ];
 
 export const connectSocket = (server) => {
@@ -54,6 +54,13 @@ export const connectSocket = (server) => {
       sendSelfEventToUser(socket, "requestAccepted", payload);
       sendBroadcastToUser(socket, payload.whom.socketId, "requestAccepted", payload);
       console.log(`Request accepted between ${payload.by.partner} and ${payload.whom.user}`);
+    });
+
+    receiveEventFromUser(socket, "declineRequest", (payload) => {
+
+      // sendSelfEventToUser(socket, "requestAccepted", payload);
+      sendBroadcastToUser(socket, payload.whom.socketId, "declineRequestt", payload);
+      console.log(`Request declined between ${payload.by.partner} and ${payload.whom.user}`);
     });
 
     receiveEventFromUser(socket, "songSocket", (payload) => {
