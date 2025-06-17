@@ -5,7 +5,7 @@ const clients = new Map();
 const allowedOrigins = [
   "https://social-tunes.vercel.app",
   "http://localhost:3000",
-  "http://192.168.1.4:3000"
+  "http://192.168.1.3:3000"
 ];
 
 export const connectSocket = (server) => {
@@ -58,7 +58,6 @@ export const connectSocket = (server) => {
 
     receiveEventFromUser(socket, "declineRequest", (payload) => {
 
-      // sendSelfEventToUser(socket, "requestAccepted", payload);
       sendBroadcastToUser(socket, payload.whom.socketId, "declineRequestt", payload);
       console.log(`Request declined between ${payload.by.partner} and ${payload.whom.user}`);
     });
@@ -87,6 +86,29 @@ export const connectSocket = (server) => {
       sendBroadcastToUser(socket, partnerId, "partnerLeft", {});
     });
 
+    receiveEventFromUser(socket, "offer", (payload) => {
+      const { to, offer } = payload;
+      sendBroadcastToUser(socket, to, "offer", {
+        from: socket.id,
+        offer,
+      });
+    });
+
+    receiveEventFromUser(socket, "answer", (payload) => {
+      const { to, answer } = payload;
+      sendBroadcastToUser(socket, to, "answer", {
+        from: socket.id,
+        answer,
+      });
+    });
+
+    receiveEventFromUser(socket, "ice-candidate", (payload) => {
+      const { to, candidate } = payload;
+      sendBroadcastToUser(socket, to, "ice-candidate", {
+        from: socket.id,
+        candidate,
+      });
+    });
 
     socket.on("disconnect", () => {
       const partnerId = getPartnerSocket(socket.id)?.partner;
@@ -129,15 +151,6 @@ const receiveEventFromUser = (socket, event, callback) => {
   });
 };
 
-const isClientConnected = (clientId) => {
-  return clients.has(clientId);
-};
-
-
 function getPartnerSocket(socketId) {
   return clients.get(socketId);
 }
-
-
-
-
