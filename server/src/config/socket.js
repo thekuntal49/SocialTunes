@@ -110,7 +110,7 @@ export const connectSocket = (server) => {
     receiveEventFromUser(socket, "call-declined", ({ to }) => {
       console.log('Call declined by-->', getPartnerSocket(to).partnerName);
 
-      sendBroadcastToUser(socket, to, "call-declinedd");
+      sendBroadcastToUser(socket, to, "call-declined");
     });
 
     receiveEventFromUser(socket, "ice-candidate", (payload) => {

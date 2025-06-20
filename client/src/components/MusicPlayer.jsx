@@ -150,6 +150,7 @@ const MusicPlayer = () => {
     ],
   };
 
+  // Set up RTCPeerConnection
   const createPeerConnection = useCallback(() => {
     if (peerConnection.current) {
       peerConnection.current.close();
@@ -177,18 +178,17 @@ const MusicPlayer = () => {
     peerConnection.current.onconnectionstatechange = () => {
       console.log("Connection state:", peerConnection.current.connectionState);
       setConnectionStatus(peerConnection.current.connectionState);
-    };
 
-    peerConnection.current.oniceconnectionstatechange = () => {
-      console.log(
-        "ICE connection state:",
-        peerConnection.current.iceConnectionState
-      );
+      if (peerConnection.current.connectionState === "connected") {
+        setIsConnecting(false);
+        setVideoEnabled(true);
+      }
     };
 
     return peerConnection.current;
   }, [socket, partner?.socketId]);
 
+  // Get local media stream
   const getLocalStream = async (isRemote = null) => {
     try {
       if (!localStream.current) {
@@ -198,17 +198,14 @@ const MusicPlayer = () => {
         });
 
         localStream.current = stream;
-
-        if (!isRemote) {
-          localVideoRef.current.srcObject = stream;
-        } else {
-          if (localVideoRef.current) {
-            localVideoRef.current.srcObject = stream;
-          }
-        }
-
         console.log("Got local stream");
       }
+
+      // Always set the local video regardless of isRemote parameter
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = localStream.current;
+      }
+
       return localStream.current;
     } catch (error) {
       console.error("Error getting local stream:", error);
@@ -216,6 +213,7 @@ const MusicPlayer = () => {
     }
   };
 
+  // Add media to connection
   const addTracksToConnection = (stream, pc) => {
     stream.getTracks().forEach((track) => {
       console.log("Adding track:", track.kind);
@@ -223,18 +221,66 @@ const MusicPlayer = () => {
     });
   };
 
+  // Caller clicks "Start Call"
+  const startVideoCall = async () => {
+    try {
+      console.log("Starting video call");
+      setIsConnecting(true);
+
+      const stream = await getLocalStream();
+      const pc = createPeerConnection();
+
+      addTracksToConnection(stream, pc);
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit("offer", { offer, to: partner.socketId });
+      console.log("Sent offer");
+    } catch (error) {
+      console.error("Failed to start video call:", error);
+      setIsConnecting(false);
+      setVideoEnabled(false);
+    }
+  };
+
+  // Define event handlers before using them
+  const handleOffer = async ({ offer, from }) => {
+    try {
+      console.log("Incoming call offer from:", from);
+      setIncomingCall({ offer, from });
+      setShowAcceptUI(true);
+    } catch (error) {
+      console.error("Error handling offer:", error);
+    }
+  };
+
+  const handleDecline = () => {
+    console.log("Call declined by partner");
+    setIsConnecting(false);
+    setVideoEnabled(false);
+    setShowAcceptUI(false);
+    setIncomingCall(null);
+
+    // Clean up connection
+    if (peerConnection.current) {
+      peerConnection.current.close();
+      peerConnection.current = null;
+    }
+
+    if (localStream.current) {
+      localStream.current.getTracks().forEach((track) => {
+        track.stop();
+      });
+      localStream.current = null;
+    }
+
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+    }
+  };
+
   useEffect(() => {
     if (!socket) return;
-
-    const handleOffer = async ({ offer, from }) => {
-      try {
-        console.log("Incoming call offer from:", from);
-        setIncomingCall({ offer, from });
-        setShowAcceptUI(true);
-      } catch (error) {
-        console.error("Error handling offer:", error);
-      }
-    };
 
     const handleAnswer = async ({ answer, from }) => {
       try {
@@ -245,7 +291,6 @@ const MusicPlayer = () => {
           );
           console.log("Set remote description from answer");
         }
-        setIsConnecting(false);
       } catch (error) {
         console.error("Error handling answer:", error);
         setIsConnecting(false);
@@ -272,62 +317,30 @@ const MusicPlayer = () => {
       }
     };
 
+    // Register event listeners
     socket.on("offer", handleOffer);
     socket.on("answer", handleAnswer);
+    socket.on("call-declined", handleDecline);
     socket.on("ice-candidate", handleIceCandidate);
 
     return () => {
       socket.off("offer", handleOffer);
       socket.off("answer", handleAnswer);
+      socket.off("call-declined", handleDecline);
       socket.off("ice-candidate", handleIceCandidate);
     };
-  }, [socket, createPeerConnection, videoEnabled, audioEnabled]);
+  }, [socket, partner?.socketId]);
 
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleDecline = () => {
-      toast.error("Your partner declined the call.");
-      endCall();
-    };
-
-    socket.on("call-declinedd", handleDecline);
-
-    // Cleanup on unmount
-    return () => {
-      socket.off("call-declinedd", handleDecline);
-    };
-  }, [socket]);
-
-  const startVideoCall = async () => {
-    try {
-      console.log("Starting video call");
-      setIsConnecting(true);
-      setVideoEnabled(true);
-
-      const stream = await getLocalStream();
-      const pc = createPeerConnection();
-
-      addTracksToConnection(stream, pc);
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit("offer", { offer, to: partner.socketId });
-      console.log("Sent offer");
-    } catch (error) {
-      console.error("Failed to start video call:", error);
-      setIsConnecting(false);
-      setVideoEnabled(false);
-    }
-  };
-
+  // On accept
   const handleAcceptCall = async () => {
     if (!incomingCall) return;
 
     try {
+      console.log("Accepting call from:", incomingCall.from);
       setIsConnecting(true);
+      setVideoEnabled(true);
 
-      const stream = await getLocalStream(true);
+      const stream = await getLocalStream();
       const pc = createPeerConnection();
       addTracksToConnection(stream, pc);
 
@@ -348,45 +361,28 @@ const MusicPlayer = () => {
       setIncomingCall(null);
     } catch (error) {
       console.error("Error accepting call:", error);
-    } finally {
       setIsConnecting(false);
+      setVideoEnabled(false);
     }
   };
 
+  // On decline
   const handleDeclineCall = () => {
     if (!incomingCall) return;
 
+    console.log("Declining call from:", incomingCall.from);
     socket.emit("call-declined", { to: incomingCall.from });
     setShowAcceptUI(false);
     setIncomingCall(null);
   };
 
-  const toggleVideo = async () => {
-    if (!videoEnabled) {
-      await startVideoCall();
-    } else {
-      // Toggle video track
-      if (localStream.current) {
-        const videoTrack = localStream.current.getVideoTracks()[0];
-        if (videoTrack) {
-          videoTrack.enabled = !videoTrack.enabled;
-        }
-      }
-    }
-  };
-
-  const toggleAudio = () => {
-    if (localStream.current) {
-      const audioTrack = localStream.current.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setAudioEnabled(audioTrack.enabled);
-      }
-    }
-  };
-
   const endCall = () => {
     console.log("Ending call");
+
+    // Notify partner about ending call
+    if (socket && partner?.socketId) {
+      socket.emit("call-ended", { to: partner.socketId });
+    }
 
     if (localStream.current) {
       localStream.current.getTracks().forEach((track) => {
@@ -396,10 +392,6 @@ const MusicPlayer = () => {
     }
 
     if (peerConnection.current) {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = null;
-      }
-
       peerConnection.current.close();
       peerConnection.current = null;
     }
@@ -408,10 +400,16 @@ const MusicPlayer = () => {
       localVideoRef.current.srcObject = null;
     }
 
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
+
     setVideoEnabled(false);
     setAudioEnabled(true);
     setIsConnecting(false);
-    setConnectionStatus("disconnected");
+    setConnectionStatus("online");
+    setShowAcceptUI(false);
+    setIncomingCall(null);
   };
 
   const getConnectionStatusColor = () => {
@@ -663,7 +661,7 @@ const MusicPlayer = () => {
                   ) : (
                     <>
                       <IconButton
-                        onClick={toggleVideo}
+                        onClick={startVideoCall}
                         disabled={isConnecting}
                         sx={{
                           width: 64,
