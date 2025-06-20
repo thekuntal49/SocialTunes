@@ -94,28 +94,6 @@
 
 // export default MusicPlayer;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import React, {
   useContext,
   useEffect,
@@ -147,6 +125,7 @@ import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
 import CallEndIcon from "@mui/icons-material/CallEnd";
 import PersonIcon from "@mui/icons-material/Person";
+import toast from "react-hot-toast";
 
 const MusicPlayer = () => {
   const { currentSong } = useContext(MusicContext);
@@ -155,7 +134,9 @@ const MusicPlayer = () => {
   const [videoEnabled, setVideoEnabled] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState("disconnected");
+  const [connectionStatus, setConnectionStatus] = useState("online");
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [showAcceptUI, setShowAcceptUI] = useState(false);
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -212,13 +193,11 @@ const MusicPlayer = () => {
     try {
       if (!localStream.current) {
         localStream.current = await navigator.mediaDevices.getUserMedia({
-          video: videoEnabled,
-          audio: audioEnabled,
+          video: true,
+          audio: true,
         });
 
-        if (localVideoRef.current && videoEnabled) {
-          localVideoRef.current.srcObject = localStream.current;
-        }
+        localVideoRef.current.srcObject = localStream.current;
 
         console.log("Got local stream");
       }
@@ -241,25 +220,11 @@ const MusicPlayer = () => {
 
     const handleOffer = async ({ offer, from }) => {
       try {
-        console.log("Received offer from:", from);
-        setIsConnecting(true);
-
-        const stream = await getLocalStream();
-        const pc = createPeerConnection();
-
-        addTracksToConnection(stream, pc);
-
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-
-        socket.emit("answer", { answer, to: from });
-        console.log("Sent answer");
-
-        setIsConnecting(false);
+        console.log("Incoming call offer from:", from);
+        setIncomingCall({ offer, from });
+        setShowAcceptUI(true);
       } catch (error) {
         console.error("Error handling offer:", error);
-        setIsConnecting(false);
       }
     };
 
@@ -310,6 +275,22 @@ const MusicPlayer = () => {
     };
   }, [socket, createPeerConnection, videoEnabled, audioEnabled]);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleDecline = () => {
+      toast.error("Your partner declined the call.");
+      endCall();
+    };
+
+    socket.on("call-declinedd", handleDecline);
+
+    // Cleanup on unmount
+    return () => {
+      socket.off("call-declinedd", handleDecline);
+    };
+  }, [socket]);
+
   const startVideoCall = async () => {
     try {
       console.log("Starting video call");
@@ -323,7 +304,6 @@ const MusicPlayer = () => {
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-
       socket.emit("offer", { offer, to: partner.socketId });
       console.log("Sent offer");
     } catch (error) {
@@ -331,6 +311,46 @@ const MusicPlayer = () => {
       setIsConnecting(false);
       setVideoEnabled(false);
     }
+  };
+
+  const handleAcceptCall = async () => {
+    if (!incomingCall) return;
+
+    try {
+      setIsConnecting(true);
+
+      const stream = await getLocalStream();
+      const pc = createPeerConnection();
+      addTracksToConnection(stream, pc);
+
+      await pc.setRemoteDescription(
+        new RTCSessionDescription(incomingCall.offer)
+      );
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      socket.emit("answer", {
+        answer,
+        to: incomingCall.from,
+      });
+
+      console.log("Sent answer to:", incomingCall.from);
+      setShowAcceptUI(false);
+      setIncomingCall(null);
+    } catch (error) {
+      console.error("Error accepting call:", error);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDeclineCall = () => {
+    if (!incomingCall) return;
+
+    socket.emit("call-declined", { to: incomingCall.from });
+    setShowAcceptUI(false);
+    setIncomingCall(null);
   };
 
   const toggleVideo = async () => {
@@ -360,7 +380,6 @@ const MusicPlayer = () => {
   const endCall = () => {
     console.log("Ending call");
 
-    // Stop all tracks
     if (localStream.current) {
       localStream.current.getTracks().forEach((track) => {
         track.stop();
@@ -368,38 +387,30 @@ const MusicPlayer = () => {
       localStream.current = null;
     }
 
-    // Close peer connection
     if (peerConnection.current) {
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null;
+      }
+
       peerConnection.current.close();
       peerConnection.current = null;
     }
 
-    // Clear video elements
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = null;
-    }
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = null;
-    }
-
-    // Emit leave session
-    if (socket && partner?.socketId) {
-      socket.emit("leaveSession", {
-        by: user,
-        partnerId: partner.socketId,
-      });
     }
 
     setVideoEnabled(false);
     setAudioEnabled(true);
     setIsConnecting(false);
     setConnectionStatus("disconnected");
-    setPartner([]);
   };
 
   const getConnectionStatusColor = () => {
     switch (connectionStatus) {
       case "connected":
+        return "#4caf50";
+      case "online":
         return "#4caf50";
       case "connecting":
         return "#ff9800";
@@ -411,209 +422,282 @@ const MusicPlayer = () => {
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        background: "linear-gradient(to right top, #1a0000, #0f0f0f)",
-        px: 2,
-        py: 4,
-        textAlign: "center",
-      }}
-    >
-      {partner && (
-        <Fade in={true} timeout={800}>
-          <Card
-            elevation={20}
-            sx={{
-              maxWidth: 900,
-              mx: "auto",
-              mb: 4,
-              background: "linear-gradient(to right top, #1a0000, #0f0f0f)",
-              backdropFilter: "blur(20px)",
-              borderRadius: 6,
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              overflow: "visible",
-            }}
-          >
-            <CardContent sx={{ p: 4 }}>
-              {/* Header */}
-              <Stack direction="row" alignItems="center" spacing={2} mb={3}>
-                <Avatar
-                  sx={{
-                    bgcolor: "primary.main",
-                    width: 56,
-                    height: 56,
-                    fontSize: "1.5rem",
-                  }}
+    <>
+      <Box
+        sx={{
+          background: "linear-gradient(to right top, #1a0000, #0f0f0f)",
+          px: 2,
+          py: 4,
+          textAlign: "center",
+        }}
+      >
+        {partner && (
+          <Fade in={true} timeout={800}>
+            <Card
+              elevation={20}
+              sx={{
+                maxWidth: 900,
+                mx: "auto",
+                mb: 4,
+                background: "linear-gradient(to right top, #1a0000, #0f0f0f)",
+                backdropFilter: "blur(20px)",
+                borderRadius: 6,
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                overflow: "visible",
+              }}
+            >
+              <CardContent sx={{ p: 4 }}>
+                {/* Header */}
+                <Stack
+                  direction="row"
+                  alignItems="flex-start"
+                  spacing={2}
+                  mb={3}
                 >
-                  <PersonIcon />
-                </Avatar>
-                <Box>
-                  <Typography
-                    variant="h4"
+                  <Avatar
                     sx={{
-                      fontWeight: 700,
-                      background: "linear-gradient(45deg, #667eea, #764ba2)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      mb: 1,
+                      bgcolor: "primary.main",
+                      width: 56,
+                      height: 56,
+                      fontSize: "1.5rem",
                     }}
                   >
-                    {partner?.partner}
-                  </Typography>
-                  <Chip
-                    label={isConnecting ? "Connecting..." : connectionStatus}
-                    size="small"
+                    <PersonIcon />
+                  </Avatar>
+                  <Box
                     sx={{
-                      bgcolor: getConnectionStatusColor(),
-                      color: "white",
-                      fontWeight: "bold",
-                      textTransform: "capitalize",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
                     }}
-                  />
-                </Box>
-              </Stack>
+                  >
+                    <Typography
+                      sx={{
+                        fontWeight: 700,
+                        background: "linear-gradient(45deg, #667eea, #764ba2)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        mb: 1,
+                        textAlign: "left",
+                        fontSize: {
+                          xs: "1.5rem", // Mobile
+                          sm: "2rem", // Tablets
+                          md: "2.5rem", // Desktop
+                        },
+                      }}
+                    >
+                      {partner?.partner}
+                    </Typography>
 
-              {/* Video Container */}
-              {videoEnabled && (
-                <Box
-                  sx={{
-                    position: "relative",
-                    mb: 3,
-                    borderRadius: 4,
-                    overflow: "hidden",
-                    background: "#000",
-                    minHeight: 300,
-                  }}
-                >
-                  {/* Main remote video */}
+                    <Chip
+                      label={isConnecting ? "Connecting..." : connectionStatus}
+                      size="small"
+                      sx={{
+                        bgcolor: getConnectionStatusColor(),
+                        color: "white",
+                        fontWeight: "bold",
+                        textTransform: "capitalize",
+                        borderRadius: 2,
+                      }}
+                    />
+                  </Box>
+                </Stack>
+
+                {/* Video Container */}
+                {videoEnabled && (
                   <Box
                     sx={{
                       position: "relative",
-                      width: "100%",
-                      height: 400,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      mb: 3,
+                      borderRadius: 4,
+                      overflow: "hidden",
+                      background: "#000",
+                      minHeight: 300,
                     }}
                   >
-                    <video
-                      ref={remoteVideoRef}
-                      autoPlay
-                      playsInline
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        borderRadius: "16px",
-                      }}
-                    />
-
-                    {/* Picture-in-picture local video */}
+                    {/* Main remote video */}
                     <Box
                       sx={{
-                        position: "absolute",
-                        top: 16,
-                        right: 16,
-                        width: 180,
-                        height: 120,
-                        borderRadius: 3,
-                        overflow: "hidden",
-                        border: "3px solid white",
-                        boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+                        position: "relative",
+                        width: "100%",
+                        height: 400,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
                       <video
-                        ref={localVideoRef}
+                        ref={remoteVideoRef}
                         autoPlay
-                        muted
                         playsInline
                         style={{
                           width: "100%",
                           height: "100%",
                           objectFit: "cover",
+                          borderRadius: "16px",
                         }}
                       />
+
+                      {/* Picture-in-picture local video */}
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: 16,
+                          right: 16,
+                          width: 180,
+                          height: 120,
+                          borderRadius: 3,
+                          overflow: "hidden",
+                          border: "3px solid white",
+                          boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+                        }}
+                      >
+                        <video
+                          ref={localVideoRef}
+                          autoPlay
+                          muted
+                          playsInline
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      </Box>
                     </Box>
                   </Box>
-                </Box>
-              )}
+                )}
 
-              {/* Controls */}
-              <Stack
-                direction="row"
-                justifyContent="center"
-                spacing={2}
-                sx={{ mb: 2 }}
-              >
-                <IconButton
-                  onClick={toggleVideo}
-                  disabled={isConnecting}
-                  sx={{
-                    width: 64,
-                    height: 64,
-                    bgcolor: videoEnabled ? "error.main" : "primary.main",
-                    color: "white",
-                    "&:hover": {
-                      bgcolor: videoEnabled ? "error.dark" : "primary.dark",
-                      transform: "scale(1.1)",
-                    },
-                    transition: "all 0.2s ease-in-out",
-                  }}
+                {/* Controls */}
+                <Stack
+                  direction="row"
+                  justifyContent="center"
+                  spacing={10}
+                  sx={{ mb: 2 }}
                 >
-                  {videoEnabled ? <VideocamOffIcon /> : <VideocamIcon />}
-                </IconButton>
+                  {showAcceptUI ? (
+                    <Box textAlign="center" spacing={10}>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          mb: 2,
+                          fontWeight: 700,
+                          color: "primary.main",
+                        }}
+                      >
+                        📞 Incoming call
+                      </Typography>
 
-                <IconButton
-                  onClick={toggleAudio}
-                  disabled={!videoEnabled}
-                  sx={{
-                    width: 64,
-                    height: 64,
-                    bgcolor: audioEnabled ? "error.dark" : "primary.main",
-                    color: "white",
-                    "&:hover": {
-                      bgcolor: audioEnabled ? "success.dark" : "error.dark",
-                      transform: "scale(1.1)",
-                    },
-                    transition: "all 0.2s ease-in-out",
-                  }}
-                >
-                  {audioEnabled ? <MicIcon /> : <MicOffIcon />}
-                </IconButton>
+                      <Stack
+                        direction="row"
+                        justifyContent="center"
+                        spacing={2}
+                      >
+                        <IconButton
+                          onClick={handleAcceptCall}
+                          sx={{
+                            width: 64,
+                            height: 64,
+                            bgcolor: "success.main",
+                            color: "white",
+                            "&:hover": {
+                              bgcolor: "success.dark",
+                              transform: "scale(1.1)",
+                            },
+                            transition: "all 0.2s ease-in-out",
+                            position: "relative",
+                          }}
+                        >
+                          <VideocamIcon />
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              position: "absolute",
+                              top: "110%",
+                              color: "success.main",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Accept
+                          </Typography>
+                        </IconButton>
 
-                <IconButton
-                  onClick={endCall}
-                  sx={{
-                    width: 64,
-                    height: 64,
-                    bgcolor: "error.main",
-                    color: "white",
-                    "&:hover": {
-                      bgcolor: "error.dark",
-                      transform: "scale(1.1)",
-                    },
-                    transition: "all 0.2s ease-in-out",
-                  }}
-                >
-                  <CallEndIcon />
-                </IconButton>
-              </Stack>
+                        <IconButton
+                          onClick={handleDeclineCall}
+                          sx={{
+                            width: 64,
+                            height: 64,
+                            bgcolor: "error.main",
+                            color: "white",
+                            "&:hover": {
+                              bgcolor: "error.dark",
+                              transform: "scale(1.1)",
+                            },
+                            transition: "all 0.2s ease-in-out",
+                            position: "relative",
+                          }}
+                        >
+                          <CallEndIcon />
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              position: "absolute",
+                              top: "110%",
+                              color: "error.main",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Decline
+                          </Typography>
+                        </IconButton>
+                      </Stack>
+                    </Box>
+                  ) : (
+                    <>
+                      <IconButton
+                        onClick={toggleVideo}
+                        disabled={isConnecting}
+                        sx={{
+                          width: 64,
+                          height: 64,
+                          bgcolor: videoEnabled ? "error.main" : "primary.main",
+                          color: "white",
+                          "&:hover": {
+                            bgcolor: videoEnabled
+                              ? "error.dark"
+                              : "primary.dark",
+                            transform: "scale(1.1)",
+                          },
+                          transition: "all 0.2s ease-in-out",
+                        }}
+                      >
+                        {videoEnabled ? <VideocamOffIcon /> : <VideocamIcon />}
+                      </IconButton>
 
-              {isConnecting && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  textAlign="center"
-                  sx={{ fontStyle: "italic" }}
-                >
-                  Establishing connection...
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
-        </Fade>
-      )}
+                      <IconButton
+                        onClick={endCall}
+                        sx={{
+                          width: 64,
+                          height: 64,
+                          bgcolor: "error.main",
+                          color: "white",
+                          "&:hover": {
+                            bgcolor: "error.dark",
+                            transform: "scale(1.1)",
+                          },
+                          transition: "all 0.2s ease-in-out",
+                        }}
+                      >
+                        <CallEndIcon />
+                      </IconButton>
+                    </>
+                  )}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Fade>
+        )}
+      </Box>
 
       <SongList />
 
@@ -622,7 +706,7 @@ const MusicPlayer = () => {
           <PlayerControls />
         </Box>
       )}
-    </Box>
+    </>
   );
 };
 

@@ -87,11 +87,14 @@ export const connectSocket = (server) => {
     });
 
     receiveEventFromUser(socket, "offer", (payload) => {
+      console.log("Offer received from--->", getUserNameBySocketId(socket.id));
+
       const { to, offer } = payload;
       sendBroadcastToUser(socket, to, "offer", {
         from: socket.id,
         offer,
       });
+      console.log("Offer sent to--->", getUserNameBySocketId(to));
     });
 
     receiveEventFromUser(socket, "answer", (payload) => {
@@ -100,6 +103,12 @@ export const connectSocket = (server) => {
         from: socket.id,
         answer,
       });
+    });
+
+    receiveEventFromUser(socket, "call-declined", ({ to }) => {
+    console.log('Call declined by-->', getPartnerSocket(to).partnerName);
+
+      sendBroadcastToUser(socket, to, "call-declinedd");
     });
 
     receiveEventFromUser(socket, "ice-candidate", (payload) => {
@@ -124,18 +133,18 @@ export const connectSocket = (server) => {
 
 const sendSelfEventToUser = (socket, event, payload) => {
   socket.emit(event, payload);
-  console.log("sendSelfEventToUser-->", event, payload);
+  // console.log("sendSelfEventToUser-->", event, payload);
 };
 
 const sendEventToUser = (io, event, payload) => {
   io.emit(event, payload);
-  console.log("sendEventToUser-->", event, payload);
+  // console.log("sendEventToUser-->", event, payload);
 };
 
 const sendBroadcastToUser = (socket, userId, event, payload) => {
   if (userId) {
     socket.broadcast.to(userId).emit(event, payload);
-    console.log('sendBroadcastToUser-->', event, userId);
+    // console.log('sendBroadcastToUser-->', event, userId);
   }
 };
 
@@ -145,12 +154,19 @@ const getActiveClients = () => {
 
 const receiveEventFromUser = (socket, event, callback) => {
   socket.on(event, (payload) => {
-    console.log("receiveEventFromUser-->", event, payload);
+    // console.log("receiveEventFromUser-->", event, payload);
 
     callback(payload);
   });
 };
 
 function getPartnerSocket(socketId) {
-  return clients.get(socketId);
+  let obj = clients.get(socketId);
+  obj.partnerName = getUserNameBySocketId(obj.partner);
+  return obj;
+}
+
+function getUserNameBySocketId(socketId) {
+  const client = clients.get(socketId);
+  return client ? client.user : null;
 }
