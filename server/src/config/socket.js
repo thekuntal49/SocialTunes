@@ -99,6 +99,8 @@ export const connectSocket = (server) => {
 
     receiveEventFromUser(socket, "answer", (payload) => {
       const { to, answer } = payload;
+      console.log('Answer received from--->', getPartnerSocket(to).partnerName);
+
       sendBroadcastToUser(socket, to, "answer", {
         from: socket.id,
         answer,
@@ -106,7 +108,7 @@ export const connectSocket = (server) => {
     });
 
     receiveEventFromUser(socket, "call-declined", ({ to }) => {
-    console.log('Call declined by-->', getPartnerSocket(to).partnerName);
+      console.log('Call declined by-->', getPartnerSocket(to).partnerName);
 
       sendBroadcastToUser(socket, to, "call-declinedd");
     });

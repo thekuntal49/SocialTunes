@@ -189,15 +189,23 @@ const MusicPlayer = () => {
     return peerConnection.current;
   }, [socket, partner?.socketId]);
 
-  const getLocalStream = async () => {
+  const getLocalStream = async (isRemote = null) => {
     try {
       if (!localStream.current) {
-        localStream.current = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
         });
 
-        localVideoRef.current.srcObject = localStream.current;
+        localStream.current = stream;
+
+        if (!isRemote) {
+          localVideoRef.current.srcObject = stream;
+        } else {
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = stream;
+          }
+        }
 
         console.log("Got local stream");
       }
@@ -319,7 +327,7 @@ const MusicPlayer = () => {
     try {
       setIsConnecting(true);
 
-      const stream = await getLocalStream();
+      const stream = await getLocalStream(true);
       const pc = createPeerConnection();
       addTracksToConnection(stream, pc);
 
