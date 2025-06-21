@@ -161,6 +161,8 @@ const MusicPlayer = () => {
       console.log("Received remote stream:", event.streams[0]);
       console.log("Remote track", remoteVideoRef.current);
 
+      const remoteStream = event.streams[0];
+      
       if (!remoteVideoRef.current) {
         console.warn("remoteVideoRef not ready");
         return;
@@ -174,7 +176,7 @@ const MusicPlayer = () => {
             .then(() => console.log("Remote video is playing"))
             .catch((err) => console.warn("Play error:", err));
         }
-      }, 300); 
+      }, 300);
     };
 
     peerConnection.current.onconnectionstatechange = () => {
