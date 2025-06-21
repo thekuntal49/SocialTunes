@@ -127,6 +127,7 @@ const MusicPlayer = () => {
   const [connectionStatus, setConnectionStatus] = useState("online");
   const [incomingCall, setIncomingCall] = useState(null);
   const [showAcceptUI, setShowAcceptUI] = useState(false);
+  const [soundId, setSoundId] = useState(null);
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -264,7 +265,8 @@ const MusicPlayer = () => {
       console.log("Incoming call offer from:", from);
       setIncomingCall({ offer, from });
       setShowAcceptUI(true);
-      ringtone.play();
+      const soundId = ringtone.play();
+      setSoundId(soundId);
     } catch (error) {
       console.error("Error handling offer:", error);
     }
@@ -378,7 +380,7 @@ const MusicPlayer = () => {
       console.log("Sent answer to:", incomingCall.from);
       setShowAcceptUI(false);
       setIncomingCall(null);
-      ringtone.stop();
+      ringtone.stop(soundId);
     } catch (error) {
       console.error("Error accepting call:", error);
       setIsConnecting(false);
@@ -389,8 +391,7 @@ const MusicPlayer = () => {
   // On decline
   const handleDeclineCall = () => {
     if (!incomingCall) return;
-    ringtone.stop();
-
+    ringtone.stop(soundId);
     console.log("Declining call from:", incomingCall.from);
     socket.emit("call-declined", { to: incomingCall.from });
     setShowAcceptUI(false);
