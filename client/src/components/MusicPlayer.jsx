@@ -182,6 +182,11 @@ const MusicPlayer = () => {
         remoteVideoRef.current.srcObject = remoteStream;
         console.log("Remote stream assigned to video element");
 
+        remoteVideoRef.current.style.display = "none";
+        setTimeout(() => {
+          remoteVideoRef.current.style.display = "block";
+        }, 10);
+
         remoteVideoRef.current
           .play()
           .then(() => console.log("Remote video is playing"))
@@ -557,7 +562,7 @@ const MusicPlayer = () => {
                         ref={remoteVideoRef}
                         autoPlay
                         playsInline
-                        muted={true}
+                        // muted={true}
                         style={{
                           width: "100%",
                           height: "100%",
