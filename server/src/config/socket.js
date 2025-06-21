@@ -113,6 +113,12 @@ export const connectSocket = (server) => {
       sendBroadcastToUser(socket, to, "call-declined");
     });
 
+    receiveEventFromUser(socket, "call-ended", ({ to }) => {
+      console.log('Call declined by-->', getPartnerSocket(to).partnerName);
+
+      sendBroadcastToUser(socket, to, "call-ended");
+    });
+
     receiveEventFromUser(socket, "ice-candidate", (payload) => {
       const { to, candidate } = payload;
       sendBroadcastToUser(socket, to, "ice-candidate", {

@@ -159,6 +159,7 @@ const MusicPlayer = () => {
 
     peerConnection.current.ontrack = (event) => {
       console.log("Received remote stream");
+      console.log("Remote stream:", event.streams[0]);
       if (remoteVideoRef.current && event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0];
       }
@@ -267,6 +268,7 @@ const MusicPlayer = () => {
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = null;
     }
+    toast.error("Call declined by your partner.");
   };
 
   useEffect(() => {
@@ -312,12 +314,14 @@ const MusicPlayer = () => {
     socket.on("answer", handleAnswer);
     socket.on("call-declined", handleDecline);
     socket.on("ice-candidate", handleIceCandidate);
+    socket.on("call-ended", endCall);
 
     return () => {
       socket.off("offer", handleOffer);
       socket.off("answer", handleAnswer);
       socket.off("call-declined", handleDecline);
       socket.off("ice-candidate", handleIceCandidate);
+      socket.off("call-ended", endCall);
     };
   }, [socket, partner?.socketId]);
 
@@ -366,12 +370,15 @@ const MusicPlayer = () => {
     setIncomingCall(null);
   };
 
-  const endCall = () => {
+  const endCall = (onEmit = null) => {
     console.log("Ending call");
 
-    // Notify partner about ending call
-    if (socket && partner?.socketId) {
-      socket.emit("call-ended", { to: partner.socketId });
+    if (onEmit) {
+      if (socket && partner?.socketId) {
+        socket.emit("call-ended", { to: partner.socketId });
+      }
+    } else {
+      toast.error("Call ended by your partner.");
     }
 
     if (localStream.current) {
@@ -395,7 +402,7 @@ const MusicPlayer = () => {
     }
 
     setVideoEnabled(false);
-    setAudioEnabled(true);
+    setAudioEnabled(false);
     setIsConnecting(false);
     setConnectionStatus("online");
     setShowAcceptUI(false);
@@ -671,7 +678,7 @@ const MusicPlayer = () => {
                       </IconButton>
 
                       <IconButton
-                        onClick={endCall}
+                        onClick={() => endCall(true)}
                         sx={{
                           width: 64,
                           height: 64,
