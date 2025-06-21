@@ -94,21 +94,12 @@
 
 // export default MusicPlayer;
 
-import React, {
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
+import { useContext, useEffect, useRef, useState, useCallback } from "react";
 import { UserContext } from "../context/userContext";
 import {
   Box,
-  Typography,
-  Paper,
-  Divider,
-  Button,
   Stack,
+  Typography,
   IconButton,
   Avatar,
   Chip,
@@ -121,8 +112,6 @@ import PlayerControls from "./PlayerControls";
 import SongList from "./SongsList/SongsList";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import VideocamOffIcon from "@mui/icons-material/VideocamOff";
-import MicIcon from "@mui/icons-material/Mic";
-import MicOffIcon from "@mui/icons-material/MicOff";
 import CallEndIcon from "@mui/icons-material/CallEnd";
 import PersonIcon from "@mui/icons-material/Person";
 import toast from "react-hot-toast";
@@ -226,6 +215,7 @@ const MusicPlayer = () => {
     try {
       console.log("Starting video call");
       setIsConnecting(true);
+      setVideoEnabled(true);
 
       const stream = await getLocalStream();
       const pc = createPeerConnection();
