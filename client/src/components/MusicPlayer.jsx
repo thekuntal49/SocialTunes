@@ -294,7 +294,6 @@ const MusicPlayer = () => {
       localVideoRef.current.srcObject = null;
     }
     toast.error("Call declined by your partner.");
-    ringtone.stop();
   };
 
   useEffect(() => {
@@ -390,11 +389,11 @@ const MusicPlayer = () => {
   // On decline
   const handleDeclineCall = () => {
     if (!incomingCall) return;
+    ringtone.stop();
 
     console.log("Declining call from:", incomingCall.from);
     socket.emit("call-declined", { to: incomingCall.from });
     setShowAcceptUI(false);
-    ringtone.stop();
     setIncomingCall(null);
   };
 
