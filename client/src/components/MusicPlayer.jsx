@@ -162,6 +162,11 @@ const MusicPlayer = () => {
       console.log("Remote track", remoteVideoRef.current);
       if (remoteVideoRef.current && event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0];
+
+        remoteVideoRef.current
+          .play()
+          .then(() => console.log("Remote video playing"))
+          .catch((err) => console.warn("Auto-play blocked:", err));
       } else {
         console.warn("remoteVideoRef not ready or stream missing");
       }
@@ -535,7 +540,7 @@ const MusicPlayer = () => {
                         ref={remoteVideoRef}
                         autoPlay
                         playsInline
-                        muted={false}
+                        muted={true}
                         style={{
                           width: "100%",
                           height: "100%",
