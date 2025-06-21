@@ -132,6 +132,12 @@ const MusicPlayer = () => {
   const peerConnection = useRef(null);
   const localStream = useRef(null);
 
+  const ringtone = new Howl({
+    src: ["/ringtone.mp3"],
+    loop: false,
+    volume: 1.0,
+  });
+
   const servers = {
     iceServers: [
       { urls: "stun:stun.l.google.com:19302" },
@@ -257,6 +263,7 @@ const MusicPlayer = () => {
       console.log("Incoming call offer from:", from);
       setIncomingCall({ offer, from });
       setShowAcceptUI(true);
+      ringtone.play();
     } catch (error) {
       console.error("Error handling offer:", error);
     }
@@ -286,6 +293,7 @@ const MusicPlayer = () => {
       localVideoRef.current.srcObject = null;
     }
     toast.error("Call declined by your partner.");
+    ringtone.stop();
   };
 
   useEffect(() => {
@@ -370,6 +378,7 @@ const MusicPlayer = () => {
       console.log("Sent answer to:", incomingCall.from);
       setShowAcceptUI(false);
       setIncomingCall(null);
+      ringtone.stop();
     } catch (error) {
       console.error("Error accepting call:", error);
       setIsConnecting(false);
@@ -384,6 +393,7 @@ const MusicPlayer = () => {
     console.log("Declining call from:", incomingCall.from);
     socket.emit("call-declined", { to: incomingCall.from });
     setShowAcceptUI(false);
+    ringtone.stop();
     setIncomingCall(null);
   };
 
@@ -550,7 +560,7 @@ const MusicPlayer = () => {
                         ref={remoteVideoRef}
                         autoPlay
                         playsInline
-                        // muted={true}
+                        muted={false}
                         style={{
                           width: "100%",
                           height: "100%",
