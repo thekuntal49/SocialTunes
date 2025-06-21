@@ -160,6 +160,7 @@ const MusicPlayer = () => {
     peerConnection.current.ontrack = (event) => {
       console.log("Received remote stream");
       console.log("Remote stream:", event.streams[0]);
+      console.log("Remote track kind:", remoteVideoRef.current);
       if (remoteVideoRef.current && event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0];
       }
