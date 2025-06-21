@@ -158,11 +158,12 @@ const MusicPlayer = () => {
     };
 
     peerConnection.current.ontrack = (event) => {
-      console.log("Received remote stream");
-      console.log("Remote stream:", event.streams[0]);
-      console.log("Remote track kind:", remoteVideoRef.current);
+      console.log("Received remote stream:", event.streams[0]);
+      console.log("Remote track", remoteVideoRef.current);
       if (remoteVideoRef.current && event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0];
+      } else {
+        console.warn("remoteVideoRef not ready or stream missing");
       }
     };
 
@@ -534,6 +535,7 @@ const MusicPlayer = () => {
                         ref={remoteVideoRef}
                         autoPlay
                         playsInline
+                        muted={false}
                         style={{
                           width: "100%",
                           height: "100%",
