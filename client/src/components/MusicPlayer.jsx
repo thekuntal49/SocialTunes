@@ -115,6 +115,7 @@ import VideocamOffIcon from "@mui/icons-material/VideocamOff";
 import CallEndIcon from "@mui/icons-material/CallEnd";
 import PersonIcon from "@mui/icons-material/Person";
 import toast from "react-hot-toast";
+import { Howl } from "howler";
 
 const MusicPlayer = () => {
   const { currentSong } = useContext(MusicContext);
