@@ -158,40 +158,28 @@ const MusicPlayer = () => {
     };
 
     peerConnection.current.ontrack = (event) => {
-      console.log("Received remote stream:", event.streams[0]);
-      console.log("Remote track", remoteVideoRef.current);
-
       const remoteStream = event.streams[0];
 
       if (!remoteVideoRef.current) {
         console.warn("remoteVideoRef not ready");
         return;
       }
-      // setTimeout(() => {
-      //   if (remoteVideoRef.current) {
-      //     remoteVideoRef.current.srcObject = remoteStream;
-
-      //     remoteVideoRef.current
-      //       .play()
-      //       .then(() => console.log("Remote video is playing"))
-      //       .catch((err) => console.warn("Play error:", err));
-      //   }
-      // }, 300);
 
       if (remoteVideoRef.current.srcObject !== remoteStream) {
         remoteVideoRef.current.srcObject = remoteStream;
         console.log("Remote stream assigned to video element");
-
-        remoteVideoRef.current.style.display = "none";
-        setTimeout(() => {
-          remoteVideoRef.current.style.display = "block";
-        }, 10);
 
         remoteVideoRef.current
           .play()
           .then(() => console.log("Remote video is playing"))
           .catch((err) => console.warn("Play error:", err));
       }
+
+      console.log("Received remote stream:", remoteStream);
+      console.log("Remote track", remoteVideoRef.current);
+      console.log("Remote stream tracks:", remoteStream.getTracks());
+      console.log("Remote video tracks:", remoteStream.getVideoTracks());
+      console.log("Remote audio tracks:", remoteStream.getAudioTracks());
     };
 
     peerConnection.current.onconnectionstatechange = () => {
