@@ -380,7 +380,8 @@ const MusicPlayer = () => {
       console.log("Sent answer to:", incomingCall.from);
       setShowAcceptUI(false);
       setIncomingCall(null);
-      ringtone.stop(soundId);
+      if (soundId) ringtone.stop(soundId);
+      ringtone.stop();
     } catch (error) {
       console.error("Error accepting call:", error);
       setIsConnecting(false);
@@ -391,7 +392,8 @@ const MusicPlayer = () => {
   // On decline
   const handleDeclineCall = () => {
     if (!incomingCall) return;
-    ringtone.stop(soundId);
+    if (soundId) ringtone.stop(soundId);
+    ringtone.stop();
     console.log("Declining call from:", incomingCall.from);
     socket.emit("call-declined", { to: incomingCall.from });
     setShowAcceptUI(false);
