@@ -140,12 +140,31 @@ const MusicPlayer = () => {
     volume: 1.0,
   });
 
-  const servers = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-    ],
-  };
+  // const servers = {
+  //   iceServers: [
+  //     { urls: "stun:stun.l.google.com:19302" },
+  //     { urls: "stun:stun1.l.google.com:19302" },
+  //   ],
+  // };
+
+const servers = {
+  iceServers: [
+    {
+      urls: ["stun:bn-turn2.xirsys.com"],
+    },
+    {
+      username:
+        "KOo7L3-HXfompS_KFnBUpL2zPDmkLE18D7lfVKqr1bexPhmECxYyB5rcOM9ZYcrmAAAAAGhY84BibGF0aGVyNDAyMQ==",
+      credential: "f2f0e73e-4ffa-11f0-b8dc-0242ac140004",
+      urls: [
+        "turn:bn-turn2.xirsys.com:80?transport=udp",
+        "turn:bn-turn2.xirsys.com:3478?transport=udp",
+        "turn:bn-turn2.xirsys.com:80?transport=tcp",
+        "turn:bn-turn2.xirsys.com:3478?transport=tcp",
+      ],
+    },
+  ],
+};
 
   // Set up RTCPeerConnection
   const createPeerConnection = useCallback(() => {
