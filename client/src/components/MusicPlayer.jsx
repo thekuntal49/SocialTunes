@@ -45,7 +45,7 @@ const MusicPlayer = () => {
     volume: 1.0,
   });
 
-  const servers = {
+  const ICE_SERVERS = {
     iceServers: [
       {
         urls: ["stun:bn-turn2.xirsys.com"],
@@ -102,7 +102,7 @@ const MusicPlayer = () => {
         initiator: true,
         trickle: false,
         stream,
-        config: servers,
+        config: { iceServers: ICE_SERVERS },
       });
 
       peer.on("signal", (signal) => {
