@@ -29,7 +29,6 @@ const SongList = () => {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
         background: "linear-gradient(to bottom, #1a0000, #0f0f0f)",
         py: 6,
         px: { xs: 2, sm: 4, md: 8 },
