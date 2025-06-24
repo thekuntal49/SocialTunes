@@ -102,7 +102,7 @@ const MusicPlayer = () => {
         initiator: true,
         trickle: false,
         stream,
-        config: { iceServers: ICE_SERVERS },
+        config: ICE_SERVERS,
       });
 
       peer.on("signal", (signal) => {
