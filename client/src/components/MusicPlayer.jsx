@@ -455,7 +455,6 @@ const MusicPlayer = () => {
             <Card
               elevation={20}
               sx={{
-                maxWidth: 900,
                 mx: "auto",
                 mb: 4,
                 background: "linear-gradient(135deg, rgba(26, 0, 0, 0.95), rgba(15, 15, 15, 0.95))",
