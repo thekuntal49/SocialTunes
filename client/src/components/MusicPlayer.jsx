@@ -20,7 +20,7 @@ import CallEndIcon from "@mui/icons-material/CallEnd";
 import PersonIcon from "@mui/icons-material/Person";
 import toast from "react-hot-toast";
 import { Howl } from "howler";
-import Peer from "simple-peer";
+import Peer from "simple-peer/simplepeer.min.js";
 
 const MusicPlayer = () => {
   const { currentSong } = useContext(MusicContext);
@@ -63,7 +63,7 @@ const MusicPlayer = () => {
   ];
 
   // Get local media stream
-  const getLocalStream = async (isRemote = null) => {
+  const getLocalStream = async () => {
     try {
       if (!localStream.current) {
         const stream = await navigator.mediaDevices.getUserMedia({
