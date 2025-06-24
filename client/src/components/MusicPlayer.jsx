@@ -447,7 +447,6 @@ const MusicPlayer = () => {
           px: 2,
           py: 4,
           textAlign: "center",
-          minHeight: "100vh",
         }}
       >
         {partner && (
