@@ -1,99 +1,3 @@
-// import React, { useContext } from "react";
-// import { UserContext } from "../context/userContext";
-// import { Box, Typography, Paper, Divider, Button, Stack } from "@mui/material";
-// import PlayerControls from "./PlayerControls";
-// import SongList from "./SongsList/SongsList";
-// import { MusicContext } from "../context/MusicContext";
-
-// const MusicPlayer = () => {
-//   const { currentSong } = useContext(MusicContext);
-//   const { partner, setPartner, user, socket } = useContext(UserContext);
-
-//   const handleLeave = () => {
-//     if (socket && partner?.socketId) {
-//       socket.emit("leaveSession", {
-//         by: user,
-//         partnerId: partner.socketId,
-//       });
-//     }
-//     setPartner([]);
-//   };
-
-//   return (
-//     <>
-//       <Box
-//         sx={{
-//           minHeight: "100vh",
-//           background: "linear-gradient(to right top, #1a0000, #0f0f0f)",
-//           px: 2,
-//           py: 4,
-//           textAlign: "center",
-//         }}
-//       >
-//         {partner && (
-//           <Paper
-//             elevation={6}
-//             sx={{
-//               backgroundColor: "rgba(40, 0, 0, 0.85)",
-//               backdropFilter: "blur(6px)",
-//               border: "1px solid #ff4c4c88",
-//               borderRadius: 4,
-//               maxWidth: 600,
-//               mx: "auto",
-//               mb: 4,
-//               px: 3,
-//               py: 2,
-//             }}
-//           >
-//             <Typography
-//               variant="h5"
-//               sx={{
-//                 color: "#ff4c4c",
-//                 fontWeight: "bold",
-//                 textShadow: "0 0 10px #ff4c4c66",
-//               }}
-//             >
-//               🎵 Listening with{" "}
-//               <span style={{ color: "#fff" }}>{partner?.partner}</span>
-//             </Typography>
-//             <Typography variant="body2" sx={{ color: "#ccc", mt: 1 }}>
-//               You're synced and ready to vibe together.
-//             </Typography>
-
-//             <Stack direction="row" spacing={2} justifyContent="center" mt={2}>
-//               <Button
-//                 variant="outlined"
-//                 onClick={handleLeave}
-//                 sx={{
-//                   color: "#ff4c4c",
-//                   borderColor: "#ff4c4c",
-//                   "&:hover": {
-//                     backgroundColor: "rgba(255, 76, 76, 0.1)",
-//                   },
-//                 }}
-//               >
-//                 Leave Session
-//               </Button>
-//             </Stack>
-
-//             <Divider sx={{ backgroundColor: "#333", my: 2 }} />
-//           </Paper>
-//         )}
-
-//         <SongList />
-
-//         {currentSong && (
-//           <Box sx={{ mt: 4 }}>
-//             <PlayerControls />
-//           </Box>
-//         )}
-//       </Box>
-//     </>
-//   );
-// };
-
-// export default MusicPlayer;
-
 import { useContext, useEffect, useRef, useState, useCallback } from "react";
 import { UserContext } from "../context/userContext";
 import {
@@ -116,10 +20,11 @@ import CallEndIcon from "@mui/icons-material/CallEnd";
 import PersonIcon from "@mui/icons-material/Person";
 import toast from "react-hot-toast";
 import { Howl } from "howler";
+import Peer from "simple-peer";
 
 const MusicPlayer = () => {
   const { currentSong } = useContext(MusicContext);
-  const { partner, setPartner, user, socket } = useContext(UserContext);
+  const { partner, socket } = useContext(UserContext);
 
   const [videoEnabled, setVideoEnabled] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
@@ -131,7 +36,7 @@ const MusicPlayer = () => {
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
-  const peerConnection = useRef(null);
+  const peerRef = useRef(null);
   const localStream = useRef(null);
 
   const ringtone = new Howl({
@@ -140,87 +45,24 @@ const MusicPlayer = () => {
     volume: 1.0,
   });
 
-  // const servers = {
-  //   iceServers: [
-  //     { urls: "stun:stun.l.google.com:19302" },
-  //     { urls: "stun:stun1.l.google.com:19302" },
-  //   ],
-  // };
-
-const servers = {
-  iceServers: [
-    {
-      urls: ["stun:bn-turn2.xirsys.com"],
-    },
-    {
-      username:
-        "KOo7L3-HXfompS_KFnBUpL2zPDmkLE18D7lfVKqr1bexPhmECxYyB5rcOM9ZYcrmAAAAAGhY84BibGF0aGVyNDAyMQ==",
-      credential: "f2f0e73e-4ffa-11f0-b8dc-0242ac140004",
-      urls: [
-        "turn:bn-turn2.xirsys.com:80?transport=udp",
-        "turn:bn-turn2.xirsys.com:3478?transport=udp",
-        "turn:bn-turn2.xirsys.com:80?transport=tcp",
-        "turn:bn-turn2.xirsys.com:3478?transport=tcp",
-      ],
-    },
-  ],
-};
-
-  // Set up RTCPeerConnection
-  const createPeerConnection = useCallback(() => {
-    if (peerConnection.current) {
-      peerConnection.current.close();
-    }
-
-    peerConnection.current = new RTCPeerConnection(servers);
-
-    peerConnection.current.onicecandidate = (event) => {
-      if (event.candidate && socket && partner?.socketId) {
-        console.log("Sending ICE candidate");
-        socket.emit("ice-candidate", {
-          candidate: event.candidate,
-          to: partner.socketId,
-        });
-      }
-    };
-
-    peerConnection.current.ontrack = (event) => {
-      const remoteStream = event.streams[0];
-
-      if (!remoteVideoRef.current) {
-        console.warn("remoteVideoRef not ready");
-        return;
-      }
-
-      if (remoteVideoRef.current.srcObject !== remoteStream) {
-        remoteVideoRef.current.srcObject = remoteStream;
-        console.log("Remote stream assigned to video element");
-
-        remoteVideoRef.current
-          .play()
-          .then(() => console.log("Remote video is playing"))
-          .catch((err) => console.warn("Play error:", err));
-      }
-
-      console.log("Received remote stream:", remoteStream);
-      console.log("Remote track", remoteVideoRef.current);
-      console.log("Remote stream tracks:", remoteStream.getTracks());
-      console.log("Remote video tracks:", remoteStream.getVideoTracks());
-      console.log("Remote audio tracks:", remoteStream.getAudioTracks());
-    };
-
-    peerConnection.current.onconnectionstatechange = () => {
-      console.log("Connection state:", peerConnection.current.connectionState);
-      setConnectionStatus(peerConnection.current.connectionState);
-
-      if (peerConnection.current.connectionState === "connected") {
-        setIsConnecting(false);
-        setVideoEnabled(true);
-      }
-    };
-
-    return peerConnection.current;
-  }, [socket, partner?.socketId]);
+  const servers = {
+    iceServers: [
+      {
+        urls: ["stun:bn-turn2.xirsys.com"],
+      },
+      {
+        username:
+          "KOo7L3-HXfompS_KFnBUpL2zPDmkLE18D7lfVKqr1bexPhmECxYyB5rcOM9ZYcrmAAAAAGhY84BibGF0aGVyNDAyMQ==",
+        credential: "f2f0e73e-4ffa-11f0-b8dc-0242ac140004",
+        urls: [
+          "turn:bn-turn2.xirsys.com:80?transport=udp",
+          "turn:bn-turn2.xirsys.com:3478?transport=udp",
+          "turn:bn-turn2.xirsys.com:80?transport=tcp",
+          "turn:bn-turn2.xirsys.com:3478?transport=tcp",
+        ],
+      },
+    ],
+  };
 
   // Get local media stream
   const getLocalStream = async (isRemote = null) => {
@@ -247,14 +89,6 @@ const servers = {
     }
   };
 
-  // Add media to connection
-  const addTracksToConnection = (stream, pc) => {
-    stream.getTracks().forEach((track) => {
-      console.log("Adding track:", track.kind);
-      pc.addTrack(track, stream);
-    });
-  };
-
   // Caller clicks "Start Call"
   const startVideoCall = async () => {
     try {
@@ -263,14 +97,43 @@ const servers = {
       setVideoEnabled(true);
 
       const stream = await getLocalStream();
-      const pc = createPeerConnection();
 
-      addTracksToConnection(stream, pc);
+      const peer = new Peer({
+        initiator: true,
+        trickle: false,
+        stream,
+        config: servers,
+      });
 
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit("offer", { offer, to: partner.socketId });
-      console.log("Sent offer");
+      peer.on("signal", (signal) => {
+        socket.emit("call-user", {
+          signal,
+          to: partner.socketId,
+        });
+      });
+
+      peer.on("stream", (remoteStream) => {
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = remoteStream;
+        }
+      });
+
+      peer.on("connect", () => {
+        console.log("Connected to peer");
+        setIsConnecting(false);
+      });
+
+      peer.on("error", (err) => {
+        console.error("Peer error:", err);
+        endCall();
+      });
+
+      peer.on("close", () => {
+        console.log("Peer connection closed");
+        endCall();
+      });
+
+      peerRef.current = peer;
     } catch (error) {
       console.error("Failed to start video call:", error);
       setIsConnecting(false);
@@ -279,16 +142,12 @@ const servers = {
   };
 
   // Define event handlers before using them
-  const handleOffer = async ({ offer, from }) => {
-    try {
-      console.log("Incoming call offer from:", from);
-      setIncomingCall({ offer, from });
-      setShowAcceptUI(true);
-      const soundId = ringtone.play();
-      setSoundId(soundId);
-    } catch (error) {
-      console.error("Error handling offer:", error);
-    }
+  const handleOffer = ({ signal, from }) => {
+    console.log("Incoming call offer from:", from);
+    setIncomingCall({ signal, from });
+    setShowAcceptUI(true);
+    const soundId = ringtone.play();
+    setSoundId(soundId);
   };
 
   const handleDecline = () => {
@@ -320,53 +179,24 @@ const servers = {
   useEffect(() => {
     if (!socket) return;
 
-    const handleAnswer = async ({ answer, from }) => {
-      try {
-        console.log("Received answer from:", from);
-        if (peerConnection.current) {
-          await peerConnection.current.setRemoteDescription(
-            new RTCSessionDescription(answer)
-          );
-          console.log("Set remote description from answer");
-        }
-      } catch (error) {
-        console.error("Error handling answer:", error);
-        setIsConnecting(false);
-      }
-    };
-
-    const handleIceCandidate = async ({ candidate, from }) => {
-      try {
-        console.log("Received ICE candidate from:", from);
-        if (
-          candidate &&
-          peerConnection.current &&
-          peerConnection.current.remoteDescription
-        ) {
-          await peerConnection.current.addIceCandidate(
-            new RTCIceCandidate(candidate)
-          );
-          console.log("Added ICE candidate");
-        } else {
-          console.warn("ICE candidate received but connection not ready");
-        }
-      } catch (error) {
-        console.error("Error adding ICE candidate:", error);
-      }
-    };
-
     // Register event listeners
-    socket.on("offer", handleOffer);
-    socket.on("answer", handleAnswer);
+    socket.on("call-user", handleOffer);
+    socket.on("answer-call", ({ signal }) => {
+      if (peerRef.current) {
+        peerRef.current.signal(signal);
+      }
+    });
     socket.on("call-declined", handleDecline);
-    socket.on("ice-candidate", handleIceCandidate);
     socket.on("call-ended", endCall);
 
     return () => {
       socket.off("offer", handleOffer);
-      socket.off("answer", handleAnswer);
+      socket.off("answer-call", ({ signal }) => {
+        if (peerRef.current) {
+          peerRef.current.signal(signal);
+        }
+      });
       socket.off("call-declined", handleDecline);
-      socket.off("ice-candidate", handleIceCandidate);
       socket.off("call-ended", endCall);
     };
   }, [socket, partner?.socketId]);
@@ -381,26 +211,48 @@ const servers = {
       setVideoEnabled(true);
 
       const stream = await getLocalStream();
-      const pc = createPeerConnection();
-      addTracksToConnection(stream, pc);
 
-      await pc.setRemoteDescription(
-        new RTCSessionDescription(incomingCall.offer)
-      );
-
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      socket.emit("answer", {
-        answer,
-        to: incomingCall.from,
+      const peer = new Peer({
+        initiator: false,
+        trickle: false,
+        stream,
+        config: servers,
       });
 
-      console.log("Sent answer to:", incomingCall.from);
+      peer.on("signal", (signal) => {
+        socket.emit("answer-call", {
+          signal,
+          to: incomingCall.from,
+        });
+      });
+
+      peer.on("stream", (remoteStream) => {
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = remoteStream;
+        }
+      });
+
+      peer.on("connect", () => {
+        console.log("Connected to peer");
+        setIsConnecting(false);
+      });
+
+      peer.on("error", (err) => {
+        console.error("Peer error:", err);
+        endCall();
+      });
+
+      peer.on("close", () => {
+        console.log("Peer connection closed");
+        endCall();
+      });
+
+      peer.signal(incomingCall.signal);
+
+      peerRef.current = peer;
       setShowAcceptUI(false);
       setIncomingCall(null);
       if (soundId) ringtone.stop(soundId);
-      ringtone.stop();
     } catch (error) {
       console.error("Error accepting call:", error);
       setIsConnecting(false);
@@ -422,33 +274,24 @@ const servers = {
   const endCall = (onEmit = null) => {
     console.log("Ending call");
 
-    if (onEmit) {
-      if (socket && partner?.socketId) {
-        socket.emit("call-ended", { to: partner.socketId });
-      }
+    if (onEmit && socket && partner?.socketId) {
+      socket.emit("call-ended", { to: partner.socketId });
     } else {
       toast.error("Call ended by your partner.");
     }
 
     if (localStream.current) {
-      localStream.current.getTracks().forEach((track) => {
-        track.stop();
-      });
+      localStream.current.getTracks().forEach((track) => track.stop());
       localStream.current = null;
     }
 
-    if (peerConnection.current) {
-      peerConnection.current.close();
-      peerConnection.current = null;
+    if (peerRef.current) {
+      peerRef.current.destroy();
+      peerRef.current = null;
     }
 
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = null;
-    }
-
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = null;
-    }
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
 
     setVideoEnabled(false);
     setAudioEnabled(false);

@@ -5,7 +5,7 @@ const clients = new Map();
 const allowedOrigins = [
   "https://social-tunes.vercel.app",
   "http://localhost:3000",
-  "http://192.168.1.3:3000"
+  "http://192.168.1.7:3000"
 ];
 
 export const connectSocket = (server) => {
@@ -85,47 +85,40 @@ export const connectSocket = (server) => {
 
       sendBroadcastToUser(socket, partnerId, "partnerLeft", {});
     });
+    
+    receiveEventFromUser(socket, "call-user", (payload) => {
+      console.log("Signal received from--->", getUserNameBySocketId(socket.id));
 
-    receiveEventFromUser(socket, "offer", (payload) => {
-      console.log("Offer received from--->", getUserNameBySocketId(socket.id));
-
-      const { to, offer } = payload;
-      sendBroadcastToUser(socket, to, "offer", {
+      const { to, signal } = payload;
+      sendBroadcastToUser(socket, to, "call-user", {
         from: socket.id,
-        offer,
+        signal,
       });
-      console.log("Offer sent to--->", getUserNameBySocketId(to));
+      console.log("Signal sent to--->", getUserNameBySocketId(to));
     });
 
-    receiveEventFromUser(socket, "answer", (payload) => {
-      const { to, answer } = payload;
-      console.log('Answer received from--->', getPartnerSocket(to).partnerName);
+    receiveEventFromUser(socket, "answer-call", (payload) => {
+      const { to, signal } = payload;
+      console.log("Answer signal received from--->", getPartnerSocket(to).partnerName);
 
-      sendBroadcastToUser(socket, to, "answer", {
+      sendBroadcastToUser(socket, to, "answer-call", {
         from: socket.id,
-        answer,
+        signal,
       });
     });
 
     receiveEventFromUser(socket, "call-declined", ({ to }) => {
-      console.log('Call declined by-->', getPartnerSocket(to).partnerName);
+      console.log("Call declined by-->", getPartnerSocket(to).partnerName);
 
       sendBroadcastToUser(socket, to, "call-declined");
     });
 
     receiveEventFromUser(socket, "call-ended", ({ to }) => {
-      console.log('Call declined by-->', getPartnerSocket(to).partnerName);
+      console.log("Call ended by-->", getPartnerSocket(to).partnerName);
 
       sendBroadcastToUser(socket, to, "call-ended");
     });
 
-    receiveEventFromUser(socket, "ice-candidate", (payload) => {
-      const { to, candidate } = payload;
-      sendBroadcastToUser(socket, to, "ice-candidate", {
-        from: socket.id,
-        candidate,
-      });
-    });
 
     socket.on("disconnect", () => {
       const partnerId = getPartnerSocket(socket.id)?.partner;
