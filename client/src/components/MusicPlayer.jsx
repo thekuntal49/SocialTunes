@@ -155,12 +155,6 @@ const MusicPlayer = () => {
     setShowAcceptUI(false);
     setIncomingCall(null);
 
-    // Clean up connection
-    if (peerConnection.current) {
-      peerConnection.current.close();
-      peerConnection.current = null;
-    }
-
     if (localStream.current) {
       localStream.current.getTracks().forEach((track) => {
         track.stop();
